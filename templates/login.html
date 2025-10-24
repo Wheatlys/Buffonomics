@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>Buffonomics · Sign In</title>
+  <link rel="stylesheet" href="../static/css/login.css" />
+</head>
+<body>
+  <!-- LED Background (canvas only; no CSS gridlines to avoid seams) -->
+  <div class="bg" aria-hidden="true">
+    <canvas id="ledBackdrop" class="led-canvas"></canvas>
+    <div class="led-scan"></div>
+  </div>
+
+  <main class="frame" role="main">
+    <section class="panel" aria-label="Sign in panel">
+      <div class="brand">
+        <span class="brand__text">Buffonomics</span><span class="brand__caret">▌</span>
+      </div>
+
+      <div class="panel-inner">
+        <h1 class="welcome">Welcome Back</h1>
+
+        <form class="js-signin-form" action="#" method="post" novalidate>
+          <div class="field">
+            <label class="label" for="username">› Username</label>
+            <input class="input" id="username" name="username" type="text"
+                   placeholder="Username" autocomplete="username" autofocus />
+          </div>
+
+          <div class="field">
+            <label class="label" for="password">› Password</label>
+            <input class="input" id="password" name="password" type="password"
+                   placeholder="Password" autocomplete="current-password" />
+          </div>
+
+          <div class="field field--row">
+            <label class="checkbox">
+              <input type="checkbox" /> Remember me
+            </label>
+            <a class="muted-link" href="#">Forgot password?</a>
+          </div>
+
+          <div class="field" style="margin-top:14px;">
+            <button class="btn js-signin-button" type="submit">
+              <span class="btn__glow"></span>
+              <span class="btn__label">Sign In</span>
+            </button>
+          </div>
+
+          <p class="help">Don't have an account? <a href="#">Sign up</a></p>
+        </form>
+      </div>
+    </section>
+
+    <aside class="right" aria-hidden="true"></aside>
+  </main>
+
+  <script src="../scripts/login.js" defer></script>
+</body>
+</html>
