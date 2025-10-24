@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ====== LED Panel Background ======
+  // ====== LED Panel Background (unchanged) ======
   const canvas = document.getElementById('ledBackdrop');
   if (!canvas) return;
   const ctx = canvas.getContext('2d', { alpha: false });
@@ -191,11 +191,127 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(tick);
   }
 
-  // Start
+  // Start background
   resize();
   if (!prefersReduced) {
     requestAnimationFrame(tick);
   } else {
     drawFrame(); // static frame for reduced motion
+  }
+
+  // ====== Tagline: rotating words (previous animation style, de-clumped) ======
+  const rotator = document.querySelector('.word-rotator');
+  if (rotator){
+    const words = [
+      'BUFFONOMICS',
+      'TRANSPARENT',
+      'DATA DRIVEN',
+      'DISCLOSURES',
+      'PORTFOLIOS',
+    ];
+
+    // Ensure container has a sizer for width; create one if HTML doesn't have it
+    let sizer = rotator.querySelector('.rotator-sizer');
+    if (!sizer){
+      sizer = document.createElement('span');
+      sizer.className = 'rotator-sizer';
+      rotator.prepend(sizer);
+    }
+    const longest = words.reduce((a,b) => (b.length > a.length ? b : a), 'BUFFONOMICS');
+    sizer.textContent = longest;
+
+    // Make sure there is an initial current word
+    let current = rotator.querySelector('.word.current') || rotator.querySelector('.word');
+    if (!current){
+      current = document.createElement('span');
+      current.className = 'word current';
+      current.textContent = 'BUFFONOMICS';
+      rotator.appendChild(current);
+    } else {
+      current.classList.add('current');
+    }
+
+    let i = 0;
+    const DURATION = 1900; // ms each word visible
+    const ANIM_MS  = 900;  // must match CSS keyframes
+    let timer = null;
+
+    function prune(){
+      // Keep only one ".current"; remove everything else
+      const cur = rotator.querySelector('.word.current');
+      rotator.querySelectorAll('.word').forEach(node => {
+        if (node !== cur) node.remove();
+      });
+    }
+
+    function step(){
+      if (prefersReduced || document.hidden) return; // paused while hidden
+
+      const cur = rotator.querySelector('.word.current');
+      const nextText = words[(i + 1) % words.length];
+
+      const next = document.createElement('span');
+      next.className = 'word';
+      next.textContent = nextText;
+      rotator.appendChild(next);
+
+      // animate out current
+      if (cur){
+        cur.classList.remove('current');
+        cur.classList.add('leave');
+
+        // hard fallback in case animationend is throttled
+        const killer = setTimeout(() => cur.remove(), ANIM_MS + 1200);
+        cur.addEventListener('animationend', () => {
+          clearTimeout(killer);
+          cur.remove();
+        }, { once:true });
+      }
+
+      // animate in next
+      requestAnimationFrame(() => {
+        next.classList.add('enter');
+        setTimeout(() => {
+          next.classList.remove('enter');
+          next.classList.add('current');
+        }, ANIM_MS);
+      });
+
+      i = (i + 1) % words.length;
+
+      // guard: at most two words live at once
+      const extras = rotator.querySelectorAll('.word:not(.current)');
+      if (extras.length > 1){
+        extras.forEach((el, idx) => { if (idx < extras.length - 1) el.remove(); });
+      }
+    }
+
+    function schedule(){
+      if (timer || prefersReduced) return;
+      timer = setTimeout(function run(){
+        timer = null;
+        step();
+        schedule();
+      }, DURATION);
+    }
+    function stop(){
+      if (!timer) return;
+      clearTimeout(timer);
+      timer = null;
+    }
+    function resume(){
+      prune();
+      schedule();
+    }
+
+    // Pause/resume on visibility/focus to prevent clumping
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stop(); else resume();
+    });
+    window.addEventListener('blur', stop);
+    window.addEventListener('focus', resume);
+
+    // Kick off
+    schedule();
   }
 });

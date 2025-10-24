@@ -70,7 +70,7 @@ body{
     var(--panel);
 }
 
-/* Corner ticks for a techy vibe */
+/* Corner ticks */
 .panel.rail::before,
 .panel.rail::after{
   content:""; position:absolute; width:20px; height:20px; border:1px solid var(--border);
@@ -145,12 +145,12 @@ form{ margin-top:18px; }
 .help a{ color:var(--accent); text-decoration:none; }
 .help a:hover{ text-decoration:underline; }
 
-/* Right side is just waves; we place the big tagline near the dash */
+/* Right side is just waves; we place the rotating tagline near the divider */
 .hero{ position:relative; }
 .tagline{
   position:absolute;
   bottom: clamp(16px, 6vh, 48px);
-  left: clamp(16px, 4vw, 48px); /* sits right next to the divider */
+  left: clamp(16px, 4vw, 48px);
   line-height:.85;
   letter-spacing:.5px;
   margin:0;
@@ -159,20 +159,71 @@ form{ margin-top:18px; }
   pointer-events:none;
 }
 .tagline__small{
-  font-family:Arial, Helvetica, sans-serif;
   font-size: clamp(18px, 2.6vw, 34px);
   font-weight:700;
   opacity:.9;
 }
 .tagline__big{
-  font-family:Arial, Helvetica, sans-serif;
   font-size: clamp(38px, 8.5vw, 110px);
   font-weight:900;
+  text-shadow:
+    0 0 40px rgba(255,208,64,.10),
+    0 6px 40px rgba(0,0,0,.35);
+}
+
+/* Rotating word effect (slide/flip with soft mask) */
+.word-rotator{
+  position:relative;
+  display:inline-block;
+  height:1em;
+  line-height:1;
+  overflow:hidden;
+  padding:.06em 0; /* avoids clip on blur */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%);
+}
+/* invisible sizing element ensures width matches longest word */
+.word-rotator .rotator-sizer{
+  visibility:hidden;
+  white-space:nowrap;
+  display:block;
+}
+
+/* animated words are absolutely positioned */
+.word-rotator .word{
+  position:absolute; left:0; right:auto; bottom:0;
+  white-space:nowrap;
+  transform: translateY(110%) skewY(6deg);
+  opacity:0;
+  filter: blur(3px);
+  will-change: transform, opacity, filter;
+}
+.word-rotator .word.current{
+  transform: translateY(0) skewY(0);
+  opacity:1; filter: blur(0);
+}
+.word-rotator .word.enter{
+  animation: wordIn 900ms cubic-bezier(.2,.65,.2,1) forwards;
+}
+.word-rotator .word.leave{
+  animation: wordOut 900ms cubic-bezier(.4,.0,.2,1) forwards;
+}
+
+@keyframes wordIn{
+  0%   { transform: translateY(110%) skewY(6deg); opacity:0; filter:blur(3px); }
+  60%  { filter:blur(0.5px); }
+  100% { transform: translateY(0) skewY(0); opacity:1; filter:blur(0); }
+}
+@keyframes wordOut{
+  0%   { transform: translateY(0) skewY(0); opacity:1; filter:blur(0); }
+  100% { transform: translateY(-110%) skewY(-4deg); opacity:0; filter:blur(2px); }
 }
 
 /* Accessibility */
 @media (prefers-reduced-motion: reduce){
   .led-scan{ display:none; }
+  .word-rotator .word{ animation:none !important; transform:none !important; opacity:1 !important; filter:none !important; position:static !important; }
+  .word-rotator{ -webkit-mask-image:none; mask-image:none; height:auto; }
 }
 
 /* Responsive */
@@ -183,6 +234,5 @@ form{ margin-top:18px; }
     border-right:none;
     border-bottom:1px solid var(--border);
   }
-  /* Hide the giant tagline on small screens to save space */
-  .hero{ display:none; }
+  .hero{ display:none; } /* save space on small screens */
 }

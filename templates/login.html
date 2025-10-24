@@ -14,9 +14,9 @@
     <div class="led-scan"></div>
   </div>
 
-  <!-- New two-column layout: left rail (form) + right hero (waves only) -->
+  <!-- Two-column layout: left rail (form) + right hero (waves only + tagline) -->
   <main class="layout" role="main">
-    <!-- Left rail with vertical “dash” on its right edge -->
+    <!-- Left rail with the vertical divider (“dash”) on its right edge -->
     <section class="panel rail" aria-label="Sign in panel">
       <div class="brand">
         <span class="brand__text">Buffonomics</span><span class="brand__caret">▌</span>
@@ -57,11 +57,17 @@
       </div>
     </section>
 
-    <!-- Right side: nothing but waves + the big tagline near the dash -->
+    <!-- Right side: waves + rotating tagline near the divider -->
     <aside class="hero" aria-hidden="true">
       <h2 class="tagline">
         <span class="tagline__small">WE ARE</span><br>
-        <span class="tagline__big">BUFFONOMICS</span>
+        <span class="tagline__big">
+          <span class="word-rotator" aria-live="polite" aria-atomic="true">
+            <!-- hidden sizer keeps container wide enough for the longest word -->
+            <span class="rotator-sizer" aria-hidden="true">BUFFONOMICS</span>
+            <span class="word current">BUFFONOMICS</span>
+          </span>
+        </span>
       </h2>
     </aside>
   </main>
