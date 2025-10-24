@@ -42,11 +42,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const R    = 2.6;   // LED core radius
   const GLOW = R * 2.1;
 
-  // Colors
-  const RED      = { r:255, g:90,  b:78 };
-  const RED_DARK = { r:185, g:64,  b:57 };
-  const RED_OFF  = { r:18,  g:20,  b:22 };   // faint OFF LED color
-  const BG       = '#0a0b0c';
+  // Colors (gold + black)
+  const RED      = { r:255, g:208, b:64 };  // bright gold
+  const RED_DARK = { r:176, g:124, b:16 };  // deep gold for shaded core
+  const RED_OFF  = { r:20,  g:16,  b:6  };  // faint “off” gold
+  const BG       = '#0a0b0c';               // near-black background
 
   let dpr, W, H, COLS, ROWS;
 
@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function colorToRGBA(c, a){ return `rgba(${c.r},${c.g},${c.b},${a})`; }
 
   // Seamless diagonal wave (bottom-left -> top-right)
-  let phase = 0;            // keeps numbers tiny forever
+  let phase = 0;
   let breath = 0;
 
   const BAND_SPEED   = 0.085; // units/sec across normalized diagonal

@@ -14,8 +14,10 @@
     <div class="led-scan"></div>
   </div>
 
-  <main class="frame" role="main">
-    <section class="panel" aria-label="Sign in panel">
+  <!-- New two-column layout: left rail (form) + right hero (waves only) -->
+  <main class="layout" role="main">
+    <!-- Left rail with vertical “dash” on its right edge -->
+    <section class="panel rail" aria-label="Sign in panel">
       <div class="brand">
         <span class="brand__text">Buffonomics</span><span class="brand__caret">▌</span>
       </div>
@@ -55,7 +57,13 @@
       </div>
     </section>
 
-    <aside class="right" aria-hidden="true"></aside>
+    <!-- Right side: nothing but waves + the big tagline near the dash -->
+    <aside class="hero" aria-hidden="true">
+      <h2 class="tagline">
+        <span class="tagline__small">WE ARE</span><br>
+        <span class="tagline__big">BUFFONOMICS</span>
+      </h2>
+    </aside>
   </main>
 
   <script src="../scripts/login.js" defer></script>
