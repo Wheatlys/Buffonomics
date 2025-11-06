@@ -10,9 +10,28 @@ Buffonomics is a tool for tracking the trading activity of politicians in the st
 - [Kai Janipalli](https://github.com/kaja4447)
 
 ## Technology Stack
+Frontend:
+- HTML
+- CSS
+- JavaScript
+
+Backend:
+- Node.js
+- Express.js
+
+Database:
+- PostgreSQL
+
+Containerization:
+- Docker
+
+External API:
+We will be using Financial Modeling Prep's free API for stock market and politician trading data. 
+[Link](https://site.financialmodelingprep.com/developer/docs)
 
 ## Prerequisites to run the application
-Software needed to run the application:
+Docker Desktop
+Web Browser
 
 ## Instructions on running the application locally
 
