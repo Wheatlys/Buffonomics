@@ -206,7 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
       'BUFFONOMICS',
       'TRANSPARENT',
       'DATA DRIVEN',
-      'DISCLOSURES',
       'PORTFOLIOS',
     ];
 
