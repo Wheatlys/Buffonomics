@@ -14,12 +14,31 @@ app.get('/', (req, res) => {
     res.redirect('/login'); //this will call the /login route in the API
 });
 
-app.get('/login', (req, res) => {
-  res.sendFile(path.join(__dirname, '../templates/login.html'));
-});
-
 app.get('/register', (req, res) => {
   res.sendFile(path.join(__dirname, '../templates/register.html'));
+});
+
+app.post('/register', async (req, res) => {
+    //send user and pass registration
+    try {
+        const hash = await bcrypt.hash(req.body.password, 10);
+        await db.none(
+            `INSERT INTO USERS (email, password)
+            VALUES ($1, $2)`, [req.body.email, hash]
+        );
+        res.redirect('/login');
+        const users = await db.any(`SELECT * FROM users;`);
+        console.log(users);
+    }
+
+    catch (error) {
+        console.error(error)
+        res.redirect('/register');
+    }
+});
+
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, '../templates/login.html'));
 });
 
 // Default route for testing
