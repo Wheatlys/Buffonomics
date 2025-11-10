@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>Buffonomics · Home</title>
+
+  <!-- Reuse the theme from login + this page’s tweaks -->
+  <link rel="stylesheet" href="../statics/css/login.css" />
+  <link rel="stylesheet" href="../statics/css/homepage.css" />
+</head>
+<body>
+  <!-- LED background -->
+  <div class="bg" aria-hidden="true">
+    <canvas id="ledBackdrop" class="led-canvas"></canvas>
+    <div class="led-scan"></div>
+  </div>
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="topbar__inner">
+      <div class="brand">
+        <span class="brand__text">Buffonomics</span><span class="brand__caret">▌</span>
+      </div>
+      <nav class="navlinks">
+        <a class="muted-link" href="#explore">Explore</a>
+        <a class="muted-link" href="#news">News</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- 3-column layout -->
+  <div class="page">
+    <!-- LEFT: Following -->
+    <aside class="left panel-box">
+      <h3 class="following__title">Following</h3>
+      <div class="following__list">
+        <button class="chip">
+          <span class="chip__avatar">M</span>
+          <span class="chip__name">Mandari</span>
+        </button>
+        <button class="chip">
+          <span class="chip__avatar">P</span>
+          <span class="chip__name">Policy Insider</span>
+        </button>
+        <button class="chip">
+          <span class="chip__avatar">S</span>
+          <span class="chip__name">Senate Watch</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- CENTER: Explore / News -->
+    <main class="center">
+      <div class="section-header">
+        <h2 class="section-title">Explore / News</h2>
+        <span class="badge">Live</span>
+      </div>
+
+      <section id="explore" class="grid">
+        <article class="card">
+          <div class="card__thumb">Mandari</div>
+          <div class="card__body">
+            <span class="pill">Mandari update</span>
+            <p class="muted">Market reacts to committee vote…</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card__thumb">PIC</div>
+          <div class="card__body">
+            <span class="pill">Policy Impact Chart</span>
+            <p class="muted">Energy sector sentiment ticked up…</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card__thumb">Brief</div>
+          <div class="card__body">
+            <span class="pill">Morning brief</span>
+            <p class="muted">What to watch ahead of open…</p>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <!-- RIGHT: Profile / actions -->
+    <aside class="right panel-box">
+      <div class="right__profile">
+        <div class="avatar-xl">B</div>
+        <div class="profile__meta">
+          <strong>Buffonomics User</strong>
+          <div class="muted small">@you</div>
+        </div>
+        <a class="btn" href="#">Settings</a>
+        <button id="logoutBtn" class="btn alt" type="button">Logout</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Reuse your login background/animation JS -->
+  <script src="../scripts/homepage.js" defer></script>
+  <script>
+    document.getElementById('logoutBtn')?.addEventListener('click', () => {
+      try { localStorage.removeItem('token'); } catch(e){}
+      location.href = './login.html';
+    });
+  </script>
+</body>
+</html>

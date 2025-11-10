@@ -5,18 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark" />
   <title>Buffonomics · Sign In</title>
-  <link rel="stylesheet" href="../static/css/login.css" />
+
+  <!-- If you open the file directly as file:// keep ../static/... -->
+  <!-- If you run a server from project root, you may also use /static/css/login.css -->
+  <link rel="stylesheet" href="../statics/css/login.css" />
 </head>
 <body>
-  <!-- LED Background (canvas only; no CSS gridlines to avoid seams) -->
+  <!-- LED Background -->
   <div class="bg" aria-hidden="true">
     <canvas id="ledBackdrop" class="led-canvas"></canvas>
     <div class="led-scan"></div>
   </div>
 
-  <!-- Two-column layout: left rail (form) + right hero (waves only + tagline) -->
+  <!-- Two-column layout: left rail (form) + right hero -->
   <main class="layout" role="main">
-    <!-- Left rail with the vertical divider (“dash”) on its right edge -->
     <section class="panel rail" aria-label="Sign in panel">
       <div class="brand">
         <span class="brand__text">Buffonomics</span><span class="brand__caret">▌</span>
@@ -57,13 +59,11 @@
       </div>
     </section>
 
-    <!-- Right side: waves + rotating tagline near the divider -->
     <aside class="hero" aria-hidden="true">
       <h2 class="tagline">
         <span class="tagline__small">WE ARE</span><br>
         <span class="tagline__big">
           <span class="word-rotator" aria-live="polite" aria-atomic="true">
-            <!-- hidden sizer keeps container wide enough for the longest word -->
             <span class="rotator-sizer" aria-hidden="true">BUFFONOMICS</span>
             <span class="word current">BUFFONOMICS</span>
           </span>
@@ -72,6 +72,7 @@
     </aside>
   </main>
 
+  <!-- Same rule as CSS: keep ../scripts/... for file:// ; /scripts/... works if served from root -->
   <script src="../scripts/login.js" defer></script>
 </body>
 </html>
