@@ -15,7 +15,7 @@
 body {
   margin: 0;
   color: var(--fg);
-  background: var(--accent); /* solid gold background */
+  background: #000000; /* solid black background */
   font: 16px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
