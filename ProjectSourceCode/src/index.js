@@ -8,7 +8,54 @@ const pgp = require('pg-promise')();
 
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
-const db = pgp({
+const useMemoryDb = process.env.USE_MEMORY_DB === 'true'
+  || process.env.NODE_ENV === 'test';
+
+const createMemoryDb = () => {
+  const users = new Map();
+
+  const clone = (record) => (record ? { ...record } : null);
+
+  const matchesUsers = (query = '') =>
+    typeof query === 'string' && query.toLowerCase().includes('from users');
+
+  const matchesInsert = (query = '') =>
+    typeof query === 'string' && query.toLowerCase().includes('insert into users');
+
+  return {
+    async none(query = '', params = []) {
+      if (matchesInsert(query)) {
+        const [email, password] = params;
+        if (users.has(email)) {
+          const error = new Error('duplicate email');
+          error.code = '23505';
+          throw error;
+        }
+        users.set(email, { email, password });
+      }
+      return null;
+    },
+    async oneOrNone(query = '', params = []) {
+      if (matchesUsers(query)) {
+        const [email] = params;
+        return clone(users.get(email));
+      }
+      return null;
+    },
+    async any(query = '', params = []) {
+      if (matchesUsers(query)) {
+        if (params.length) {
+          const record = users.get(params[0]);
+          return record ? [clone(record)] : [];
+        }
+        return Array.from(users.values()).map((record) => clone(record));
+      }
+      return [];
+    },
+  };
+};
+
+const db = useMemoryDb ? createMemoryDb() : pgp({
   host: process.env.DB_HOST
     || process.env.POSTGRES_HOST
     || process.env.PGHOST
@@ -33,6 +80,7 @@ app.use(
     saveUninitialized: false,
   }),
 );
+app.locals.db = db;
 
 const requireAuth = (req, res, next) => {
   if (!req.session.user) {
@@ -43,6 +91,9 @@ const requireAuth = (req, res, next) => {
 
 const isValidEmail = (value = '') =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim().toLowerCase());
+
+const wantsJson = (req) =>
+  req.accepts(['html', 'json']) === 'json' || req.is('application/json');
 
 // Serve static assets
 app.use('/static', express.static(path.join(__dirname, '../static')));
@@ -68,10 +119,16 @@ app.post('/register', async (req, res) => {
   const password = (req.body.password || '').trim();
 
   if (!isValidEmail(email)) {
+    if (wantsJson(req)) {
+      return res.status(400).json({ error: 'invalidEmail' });
+    }
     return res.redirect('/register?error=invalidEmail');
   }
 
   if (password.length < 8) {
+    if (wantsJson(req)) {
+      return res.status(400).json({ error: 'weakPassword' });
+    }
     return res.redirect('/register?error=weakPassword');
   }
 
@@ -81,12 +138,21 @@ app.post('/register', async (req, res) => {
       'INSERT INTO users(email, password) VALUES ($1, $2)',
       [email, hash],
     );
+    if (wantsJson(req)) {
+      return res.status(201).json({ message: 'registered' });
+    }
     return res.redirect('/login?success=registered');
   } catch (error) {
     if (error.code === '23505') {
+      if (wantsJson(req)) {
+        return res.status(409).json({ error: 'exists' });
+      }
       return res.redirect('/register?error=exists');
     }
     console.error('Registration failed:', error);
+    if (wantsJson(req)) {
+      return res.status(500).json({ error: 'server' });
+    }
     return res.redirect('/register?error=server');
   }
 });
@@ -103,6 +169,9 @@ app.post('/login', async (req, res) => {
   const password = (req.body.password || '').trim();
 
   if (!email || !password) {
+    if (wantsJson(req)) {
+      return res.status(400).json({ error: 'missing' });
+    }
     return res.redirect('/login?error=missing');
   }
 
@@ -113,18 +182,30 @@ app.post('/login', async (req, res) => {
     );
 
     if (!user) {
+      if (wantsJson(req)) {
+        return res.status(401).json({ error: 'invalid' });
+      }
       return res.redirect('/login?error=invalid');
     }
 
     const passwordsMatch = await bcrypt.compare(password, user.password);
     if (!passwordsMatch) {
+      if (wantsJson(req)) {
+        return res.status(401).json({ error: 'invalid' });
+      }
       return res.redirect('/login?error=invalid');
     }
 
     req.session.user = { email: user.email };
+    if (wantsJson(req)) {
+      return res.status(200).json({ message: 'authenticated' });
+    }
     return res.redirect('/homepage');
   } catch (error) {
     console.error('Login failed:', error);
+    if (wantsJson(req)) {
+      return res.status(500).json({ error: 'server' });
+    }
     return res.redirect('/login?error=server');
   }
 });

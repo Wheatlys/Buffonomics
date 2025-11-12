@@ -1,84 +1,143 @@
 :root{
-  color-scheme: dark;
-  --bg:#050607;
-  --panel:#0d0f11;
-  --border:#1d2025;
+  --bg:#050608;
+  --panel:#0f1219;
+  --panel-light:#141924;
+  --fg:#f4f5f7;
+  --muted:#99a2af;
   --accent:#ffd040;
-  --text:#f4f5f7;
-  --muted:#9aa3a7;
-  --font-family:"Inter", "SF Pro Display", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --border:#1f2430;
+  --radius:18px;
 }
 
-*{ box-sizing:border-box; }
+@media (prefers-color-scheme: dark){ :root{ color-scheme: dark; } }
+*,*::before,*::after{ box-sizing:border-box; }
 body{
   margin:0;
   min-height:100vh;
-  background:radial-gradient(circle at top,#10131a 0%, #050607 55%);
-  color:var(--text);
-  font:16px/1.55 var(--font-family, "Inter", "SF Pro Display", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif);
+  font:16px/1.5 "Inter", "SF Pro Display", system-ui, -apple-system,
+       BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color:var(--fg);
+  background:radial-gradient(circle at top, rgba(255,208,64,.12), transparent 45%), var(--bg);
+  display:flex;
+  flex-direction:column;
+}
+
+.site-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:20px clamp(18px, 4vw, 50px);
+  border-bottom:1px solid var(--border);
+  background:rgba(7,9,13,.85);
+  backdrop-filter:blur(12px);
+  box-shadow:0 20px 40px rgba(0,0,0,.35);
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+.brand{
+  font-weight:800;
+  font-size:1rem;
+  letter-spacing:.2rem;
+  text-transform:uppercase;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.brand__caret{ color:var(--accent); animation:blink .95s steps(1,end) infinite; }
+@keyframes blink{ 50%{opacity:0;} }
+
+.content{
+  flex:1;
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:40px 16px;
+  padding:40px clamp(18px, 5vw, 70px);
 }
 
-.home-shell{
-  width:min(960px, 100%);
-  background:var(--panel);
+.card{
+  width:min(720px, 100%);
+  background:linear-gradient(160deg, var(--panel), var(--panel-light));
   border:1px solid var(--border);
-  border-radius:32px;
-  padding:48px clamp(24px, 4vw, 64px);
-  box-shadow:0 25px 60px rgba(0,0,0,.45);
+  border-radius:var(--radius);
+  padding:40px;
+  box-shadow:0 20px 80px rgba(0,0,0,.45);
 }
 
-.home-header{
-  margin-bottom:32px;
-}
-
-.home-kicker{
-  font-size:14px;
-  letter-spacing:0.3em;
-  color:var(--muted);
+.eyebrow{
+  font-size:0.85rem;
   text-transform:uppercase;
+  letter-spacing:.2rem;
+  color:var(--accent);
   margin:0 0 10px;
 }
 
-.home-header h1{
+.headline{
   margin:0 0 12px;
-  font-size: clamp(32px, 5vw, 56px);
+  font-size:clamp(2rem, 5vw, 3.4rem);
+  letter-spacing:-.02em;
 }
 
-.home-tagline{
-  margin:0;
+.lede{
+  margin:0 0 26px;
   color:var(--muted);
-  max-width:520px;
+  max-width:60ch;
 }
 
-.home-card{
-  border-radius:24px;
-  border:1px solid rgba(255,255,255,.08);
-  background:rgba(255,255,255,.02);
-  padding:32px;
+.actions{
   display:flex;
-  flex-direction:column;
-  gap:18px;
+  flex-wrap:wrap;
+  gap:14px;
+  margin-bottom:22px;
 }
 
-.home-button{
+.btn{
   display:inline-flex;
   align-items:center;
   justify-content:center;
+  gap:8px;
   padding:12px 20px;
   border-radius:999px;
-  border:1px solid var(--accent);
-  color:var(--accent);
-  text-decoration:none;
+  border:1px solid transparent;
+  background:var(--accent);
+  color:#1a1200;
   font-weight:600;
-  transition:transform .12s ease, box-shadow .12s ease;
+  text-decoration:none;
+  cursor:pointer;
+  transition:transform .1s ease, box-shadow .2s ease;
+}
+.btn:hover{ transform:translateY(-1px); box-shadow:0 10px 30px rgba(255,208,64,.35); }
+.btn:active{ transform:translateY(0); }
+.btn--secondary{
+  background:transparent;
+  border-color:rgba(255,255,255,.15);
+  color:var(--fg);
+}
+.btn--ghost{
+  background:transparent;
+  border-color:rgba(255,255,255,.18);
+  color:var(--fg);
 }
 
-.home-button:hover{
-  transform:translateY(-1px);
-  box-shadow:0 12px 35px rgba(255,208,64,.22);
+.alert{
+  font-size:.9rem;
+  padding:12px 16px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:rgba(0,0,0,.25);
+  margin:8px 0 0;
 }
-*** End Patch
+.alert--error{
+  border-color:#ff6b6b;
+  color:#ffb3b3;
+}
+.alert--success{
+  border-color:var(--accent);
+  color:var(--accent);
+}
+
+@media (max-width: 640px){
+  .card{ padding:28px; }
+  .actions{ flex-direction:column; }
+  .site-header{ flex-direction:column; gap:12px; }
+}
