@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark" />
-  <title>Buffonomics · Sign In</title>
+  <title>Buffonomics · Sign Up</title>
   <link rel="stylesheet" href="/static/css/login.css" />
 </head>
 <body>
@@ -23,19 +23,21 @@
       </div>
 
       <div class="panel-inner">
-        <h1 class="welcome">Welcome</h1>
+        <h1 class="welcome">Create your account</h1>
 
-        <form class="js-signin-form" action="#" method="post" novalidate>
+        <form class="js-auth-form" data-context="register" action="/register" method="post" novalidate>
+          <div class="form-alert" data-alert role="alert" hidden></div>
+
           <div class="field">
-            <label class="label" for="Email">› Email</label>
-            <input class="input" id="Email" name="Email" type="text"
-                   placeholder="Email" autocomplete="Email" autofocus />
+            <label class="label" for="email">› Email</label>
+            <input class="input" id="email" name="email" type="email"
+                   placeholder="Email" autocomplete="email" autofocus required />
           </div>
 
           <div class="field">
             <label class="label" for="password">› Password</label>
             <input class="input" id="password" name="password" type="password"
-                   placeholder="Password" autocomplete="current-password" />
+                   placeholder="Password" autocomplete="new-password" required />
           </div>
 
           <div class="field field--row">
@@ -48,11 +50,11 @@
           <div class="field" style="margin-top:14px;">
             <button class="btn js-signin-button" type="submit">
               <span class="btn__glow"></span>
-              <span class="btn__label">Sign Up</span>
+              <span class="btn__label">Create Account</span>
             </button>
           </div>
 
-          <p class="help">Already have an account? <a href="/login">Login</a></p>
+          <p class="help">Already have an account? <a href="/login">Sign in</a></p>
         </form>
       </div>
     </section>

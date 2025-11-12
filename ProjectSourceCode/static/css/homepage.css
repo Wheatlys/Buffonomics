@@ -1,0 +1,84 @@
+:root{
+  color-scheme: dark;
+  --bg:#050607;
+  --panel:#0d0f11;
+  --border:#1d2025;
+  --accent:#ffd040;
+  --text:#f4f5f7;
+  --muted:#9aa3a7;
+  --font-family:"Inter", "SF Pro Display", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+}
+
+*{ box-sizing:border-box; }
+body{
+  margin:0;
+  min-height:100vh;
+  background:radial-gradient(circle at top,#10131a 0%, #050607 55%);
+  color:var(--text);
+  font:16px/1.55 var(--font-family, "Inter", "SF Pro Display", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:40px 16px;
+}
+
+.home-shell{
+  width:min(960px, 100%);
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:32px;
+  padding:48px clamp(24px, 4vw, 64px);
+  box-shadow:0 25px 60px rgba(0,0,0,.45);
+}
+
+.home-header{
+  margin-bottom:32px;
+}
+
+.home-kicker{
+  font-size:14px;
+  letter-spacing:0.3em;
+  color:var(--muted);
+  text-transform:uppercase;
+  margin:0 0 10px;
+}
+
+.home-header h1{
+  margin:0 0 12px;
+  font-size: clamp(32px, 5vw, 56px);
+}
+
+.home-tagline{
+  margin:0;
+  color:var(--muted);
+  max-width:520px;
+}
+
+.home-card{
+  border-radius:24px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.02);
+  padding:32px;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+
+.home-button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:12px 20px;
+  border-radius:999px;
+  border:1px solid var(--accent);
+  color:var(--accent);
+  text-decoration:none;
+  font-weight:600;
+  transition:transform .12s ease, box-shadow .12s ease;
+}
+
+.home-button:hover{
+  transform:translateY(-1px);
+  box-shadow:0 12px 35px rgba(255,208,64,.22);
+}
+*** End Patch
