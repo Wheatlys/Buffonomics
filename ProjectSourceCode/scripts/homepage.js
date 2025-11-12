@@ -1,3 +1,4 @@
+// homepage.js
 // ====== Static LED Background for Homepage ======
 document.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('ledBackdrop');
@@ -40,4 +41,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
   drawStaticGrid();
   window.addEventListener('resize', drawStaticGrid);
+});
+
+// ====== Right Panel Toggle (hamburger) ======
+document.addEventListener('DOMContentLoaded', () => {
+  const toggle = document.getElementById('toggleRight');
+  const body = document.body;
+
+  // restore previous state
+  const saved = localStorage.getItem('rightCollapsed');
+  if (saved === '1') {
+    body.classList.add('right-collapsed');
+    toggle?.setAttribute('aria-expanded', 'false');
+  }
+
+  // toggle on click
+  toggle?.addEventListener('click', () => {
+    const collapsed = body.classList.toggle('right-collapsed');
+    localStorage.setItem('rightCollapsed', collapsed ? '1' : '0');
+    toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  });
+
+  // keep aria-expanded sensible across breakpoint changes
+  const mq = window.matchMedia('(max-width: 980px)');
+  const syncWithMedia = () => {
+    if (mq.matches) {
+      toggle?.setAttribute('aria-expanded', 'false');
+    } else {
+      const isCollapsed = body.classList.contains('right-collapsed');
+      toggle?.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+    }
+  };
+  mq.addEventListener?.('change', syncWithMedia);
+  syncWithMedia();
 });

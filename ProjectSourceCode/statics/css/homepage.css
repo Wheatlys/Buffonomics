@@ -1,3 +1,4 @@
+/* homepage.css */
 /* === Base Theme Colors (Gold Theme) === */
 :root {
   --bg: #0a0b0c;
@@ -247,4 +248,54 @@ body {
   .page { grid-template-columns: 1fr; }
   .left { display: none; }
   .center { margin: 0; padding: 72px 10px 20px; }
+}
+
+/* ==== NEW: Right Panel Slide + Hamburger ==== */
+.right.panel-box {
+  transition: transform 240ms ease, opacity 240ms ease;
+  will-change: transform;
+}
+body.right-collapsed .right.panel-box {
+  transform: translateX(100%);
+  opacity: 0.6;
+  pointer-events: none;
+}
+body.right-collapsed .center {
+  margin-right: 0;
+}
+
+/* Hamburger button (top-right in the topbar) */
+.hamburger {
+  display: inline-grid;
+  place-items: center;
+  gap: 4px;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: rgba(0,0,0,0.25);
+  cursor: pointer;
+}
+.hamburger span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--fg);
+  transition: transform 200ms ease, opacity 200ms ease;
+}
+
+/* Animated "X" state when collapsed */
+body.right-collapsed .hamburger span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+body.right-collapsed .hamburger span:nth-child(2) {
+  opacity: 0;
+}
+body.right-collapsed .hamburger span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+/* Hide the button where right panel is already hidden by responsive CSS */
+@media (max-width: 980px) {
+  .hamburger { display: none; }
 }

@@ -1,3 +1,4 @@
+<!-- homepage.html -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -27,6 +28,16 @@
         <a class="muted-link" href="#explore">Explore</a>
         <a class="muted-link" href="#news">News</a>
       </nav>
+
+      <!-- NEW: right panel toggle -->
+      <button id="toggleRight"
+              class="hamburger"
+              type="button"
+              aria-label="Toggle user panel"
+              aria-expanded="true"
+              aria-controls="rightPanel">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </header>
 
@@ -86,7 +97,7 @@
     </main>
 
     <!-- RIGHT: Profile / actions -->
-    <aside class="right panel-box">
+    <aside id="rightPanel" class="right panel-box">
       <div class="right__profile">
         <div class="avatar-xl">B</div>
         <div class="profile__meta">
