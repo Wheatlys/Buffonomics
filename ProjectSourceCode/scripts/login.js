@@ -1,33 +1,83 @@
-// ====== Login form UX (unchanged) ======
+// ====== Login / Register form UX ======
 document.addEventListener('DOMContentLoaded', () => {
-  const form = document.querySelector('.js-signin-form');
-  const btn  = document.querySelector('.js-signin-button');
-  const user = document.getElementById('username');
-  const pass = document.getElementById('password');
+  const params = new URLSearchParams(window.location.search);
+  const messageMap = {
+    registered: 'Account created! Sign in below.',
+    invalid: 'Email or password is incorrect.',
+    missing: 'Please enter both email and password.',
+    invalidEmail: 'Enter a valid email address (example@domain.com).',
+    weakPassword: 'Passwords must be at least 8 characters long.',
+    exists: 'Looks like you already have an account with that email.',
+    server: 'Something went wrong. Please try again.',
+  };
 
-  if (form) {
+  const showAlert = (box, text, variant = 'error') => {
+    if (!box || !text) return;
+    box.textContent = text;
+    box.dataset.variant = variant;
+    box.hidden = false;
+  };
+
+  const clearAlert = (box) => {
+    if (!box) return;
+    box.hidden = true;
+    box.textContent = '';
+    delete box.dataset.variant;
+  };
+
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  document.querySelectorAll('.js-auth-form').forEach((form) => {
+    const btn = form.querySelector('.js-signin-button');
+    const emailInput = form.querySelector('input[name="email"]');
+    const passwordInput = form.querySelector('input[name="password"]');
+    const alertBox = form.querySelector('[data-alert]');
+
+    const successCode = params.get('success');
+    const errorCode = params.get('error');
+    if (successCode && messageMap[successCode]) {
+      showAlert(alertBox, messageMap[successCode], 'success');
+    } else if (errorCode && messageMap[errorCode]) {
+      showAlert(alertBox, messageMap[errorCode], 'error');
+    }
+
+    [emailInput, passwordInput].forEach((input) => {
+      if (!input) return;
+      input.addEventListener('input', () => {
+        input.classList.remove('input--invalid');
+        clearAlert(alertBox);
+      });
+    });
+
     form.addEventListener('submit', (e) => {
-      e.preventDefault();
+      clearAlert(alertBox);
 
-      [user, pass].forEach(el => el.classList.remove('input--invalid'));
-      const invalid = [user, pass].filter(el => !el.value.trim());
-      if (invalid.length){
-        invalid.forEach(el => el.classList.add('input--invalid'));
-        invalid[0].focus();
+      const trimmedEmail = (emailInput?.value || '').trim();
+      const trimmedPassword = (passwordInput?.value || '').trim();
+      const invalidFields = [];
+
+      if (!trimmedEmail || !emailPattern.test(trimmedEmail.toLowerCase())) {
+        invalidFields.push(emailInput);
+      }
+
+      if (!trimmedPassword) {
+        invalidFields.push(passwordInput);
+      }
+
+      if (invalidFields.length) {
+        e.preventDefault();
+        invalidFields.forEach((field) => field?.classList.add('input--invalid'));
+        invalidFields[0]?.focus();
+        showAlert(alertBox, 'Please enter a valid email and password.');
         return;
       }
 
-      btn.setAttribute('aria-busy', 'true');
-      const label = btn.textContent;
-      btn.textContent = 'Signing in…';
-
-      setTimeout(() => {
-        btn.removeAttribute('aria-busy');
-        btn.textContent = label;
-        form.reset();
-        user.focus();
-      }, 900);
+      btn?.setAttribute('aria-busy', 'true');
     });
+  });
+
+  if ((params.get('success') || params.get('error')) && window.history.replaceState) {
+    window.history.replaceState({}, document.title, window.location.pathname);
   }
 
   // ====== LED Panel Background (unchanged) ======

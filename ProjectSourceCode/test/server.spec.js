@@ -1,5 +1,9 @@
 // ********************** Initialize server **********************************
 
+process.env.USE_MEMORY_DB = 'true';
+process.env.NODE_ENV = 'test';
+process.env.SESSION_SECRET = 'test-secret';
+
 const path = require('path');
 require('dotenv').config({path: path.join(__dirname, '..', '.env')});
 const server = require('../src/index'); //TODO: Make sure the path to your index.js is correctly added
