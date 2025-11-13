@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  buffonomics-web:
+    image: nginx:alpine
+    container_name: buffonomics-web
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/usr/share/nginx/html:ro
+    restart: unless-stopped

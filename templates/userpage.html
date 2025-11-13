@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buffonomics — User Profile</title>
+
+    <!-- Your userpage styles -->
+    <link rel="stylesheet" href="/static/css/userpage.css">
+</head>
+
+<body>
+
+    <!-- LED Background -->
+    <div class="bg">
+        <canvas id="ledBackdrop" class="led-canvas"></canvas>
+        <div class="led-scan"></div>
+    </div>
+
+    <div class="layout">
+
+        <!-- LEFT RAIL -->
+        <aside class="panel rail">
+            <div class="brand">
+                BUFFONOMICS<span class="brand__caret">_</span>
+            </div>
+
+            <div class="panel-inner">
+                <h2 class="welcome">Profile // Overview</h2>
+
+                <p class="small-info">
+                    Signed in as <strong>@kjanipalli</strong><br>
+                    Manage your portfolio visibility & public profile.
+                </p>
+
+                <nav class="nav-mini">
+                    <a href="/login" class="nav-link">Log Out</a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- RIGHT CONTENT -->
+        <main class="hero">
+
+            <div class="profile-card">
+
+                <!-- HEADER -->
+                <section class="profile-header">
+                    <img src="/static/img/defaultpfp.png" class="profile-pic" alt="profile picture">
+
+                    <div class="profile-info">
+                        <h1 class="profile-name">Kai Janipalli</h1>
+                        <p class="profile-username">@kjanipalli</p>
+                        <p class="profile-joined">Member since Sep 2025</p>
+                        <p class="profile-tagline">Tracking political trades with transparency & data.</p>
+                    </div>
+                </section>
+
+                <!-- STATS -->
+                <section class="stats-row">
+                    <div class="stat">
+                        <label>PORTFOLIO VALUE</label>
+                        <div class="value">$12,450.32</div>
+                    </div>
+
+                    <div class="stat">
+                        <label>POLITICIANS TRACKED</label>
+                        <div class="value">7</div>
+                    </div>
+
+                    <div class="stat">
+                        <label>FOLLOWERS</label>
+                        <div class="value">128</div>
+                    </div>
+
+                    <div class="stat">
+                        <label>FOLLOWING</label>
+                        <div class="value">34</div>
+                    </div>
+                </section>
+
+                <!-- TWO-COLUMN CONTENT -->
+                <section class="content-grid">
+
+                    <!-- LEFT COLUMN -->
+                    <div class="col">
+
+                        <div class="section">
+                            <h3>ABOUT</h3>
+                            <p>
+                                CU Boulder student analyzing congressional financial activity and policy moves.
+                                Focused on long-term political/market correlations.
+                            </p>
+                        </div>
+
+                        <div class="section">
+                            <h3>WATCHLIST</h3>
+                            <ul class="list">
+                                <li>SPY <span class="tag">ETF</span></li>
+                                <li>TSLA <span class="tag">STOCK</span></li>
+                                <li>Energy Sector <span class="tag">SECTOR</span></li>
+                            </ul>
+                        </div>
+
+                        <div class="section">
+                            <h3>INSIGHTS & NOTES</h3>
+                            <ul class="list">
+                                <li>Monitoring upcoming energy bill votes.</li>
+                                <li>Observing Senator X's timing on tech buys.</li>
+                            </ul>
+                        </div>
+
+                    </div>
+
+                    <!-- RIGHT COLUMN -->
+                    <div class="col">
+
+                        <div class="section">
+                            <h3>TRACKED POLITICIANS</h3>
+                            <ul class="list">
+                                <li>Nancy Pelosi <span class="tag">D-CA</span></li>
+                                <li>Tom Cotton <span class="tag">R-AR</span></li>
+                                <li>Elizabeth Warren <span class="tag">D-MA</span></li>
+                                <li>Dan Crenshaw <span class="tag">R-TX</span></li>
+                            </ul>
+                        </div>
+
+                        <div class="section">
+                            <h3>BADGES</h3>
+                            <div class="badge-grid">
+                                <span class="badge">EARLY ADOPTER</span>
+                                <span class="badge">DIVERSIFIED</span>
+                                <span class="badge">LONG-TERM HOLDER</span>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <h3>ACTIVITY</h3>
+                            <ul class="list">
+                                <li>Added TSLA to watchlist.</li>
+                                <li>Started tracking Senator Warren.</li>
+                                <li>Updated profile visibility.</li>
+                            </ul>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- PRIVACY CONTROLS -->
+                <section class="section privacy">
+                    <h3>PRIVACY CONTROLS</h3>
+
+                    <label class="toggle">
+                        <input type="checkbox" id="privacy-public">
+                        <span>Make profile public</span>
+                    </label>
+
+                    <label class="toggle">
+                        <input type="checkbox" id="privacy-portfolio">
+                        <span>Show portfolio value to others</span>
+                    </label>
+
+                    <label class="toggle">
+                        <input type="checkbox" id="privacy-follows">
+                        <span>Show follower/following counts</span>
+                    </label>
+
+                    <label class="toggle">
+                        <input type="checkbox" id="privacy-politicians">
+                        <span>Show tracked politicians</span>
+                    </label>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- USERPAGE JS -->
+    <script src="/scripts/userpage.js" defer></script>
+
+</body>
+</html>
+

@@ -24,7 +24,7 @@ html,body{ height:100%; }
 body{
   margin:0;
   overflow-x:hidden;
-  color:var(--fg);
+  color:var(--fg); 
   font:16px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
        "Liberation Mono","Courier New", monospace;
   background:var(--bg);
