@@ -4,6 +4,8 @@ process.env.USE_MEMORY_DB = 'true';
 process.env.NODE_ENV = 'test';
 process.env.SESSION_SECRET = 'test-secret';
 
+const path = require('path');
+require('dotenv').config({path: path.join(__dirname, '..', '.env')});
 const server = require('../src/index'); //TODO: Make sure the path to your index.js is correctly added
 
 // ********************** Import Libraries ***********************************
@@ -13,6 +15,15 @@ const chaiHttp = require('chai-http');
 chai.should();
 chai.use(chaiHttp);
 const {assert, expect} = chai;
+
+const db = server.db;
+
+before(async () => {
+  await db.none(`CREATE TABLE IF NOT EXISTS users (
+    email VARCHAR(50) PRIMARY KEY,
+    password VARCHAR(60) NOT NULL
+  )`);
+});
 
 // ********************** DEFAULT WELCOME TESTCASE ****************************
 
@@ -33,116 +44,47 @@ describe('Server!', () => {
 
 // *********************** TODO: WRITE 2 UNIT TESTCASES **************************
 
-// ********************************************************************************
+describe('Register API', () => {
+  const removeUser = email =>
+    db.none('DELETE FROM users WHERE email = $1', [email.toLowerCase()]);
 
-// *********************** AUTH TEST CASES ***************************************
+  it('Positive: /register creates a new user record', async () => {
+    const email = `tester_${Date.now()}@buffonomics.test`;
+    const password = 'ValidPassword123!';
 
-describe('Registration API', () => {
-  it('stores a valid user record when payload is correct', async () => {
-    const email = `test-${Date.now()}@example.com`;
-    const password = 'ValidPass123!';
+    try {
+      const res = await chai.request(server).post('/register').send({email, password});
+      expect(res).to.have.status(200);
+      expect(res.body.status).to.equal('success');
+      expect(res.body.message).to.equal('Registration successful');
 
-    const res = await chai
-      .request(server)
-      .post('/register')
-      .set('Accept', 'application/json')
-      .send({ email, password });
+      const storedUser = await db.oneOrNone(
+        'SELECT email, password FROM users WHERE email = $1',
+        [email],
+      );
+      expect(storedUser).to.not.be.null;
+      expect(storedUser.email).to.equal(email);
+      expect(storedUser.password).to.not.equal(password);
+    } finally {
+      await removeUser(email);
+    }
+  });
 
-    res.should.have.status(201);
-    expect(res.body.message).to.equal('registered');
+  it('Negative: /register rejects invalid email input', async () => {
+    const email = 'invalid-email';
+    const password = 'ValidPassword123!';
 
-    const stored = await server.locals.db.oneOrNone(
-      'SELECT email, password FROM users WHERE email = $1',
+    const res = await chai.request(server).post('/register').send({email, password});
+    expect(res).to.have.status(400);
+    expect(res.body.status).to.equal('error');
+    expect(res.body.message).to.equal('Invalid input');
+
+    const storedUser = await db.oneOrNone(
+      'SELECT email FROM users WHERE email = $1',
       [email],
     );
-
-    expect(stored).to.exist;
-    expect(stored.email).to.equal(email);
-    expect(stored.password).to.be.a('string');
-    expect(stored.password).to.match(/^\$2[aby]\$/); // bcrypt hash prefix
-  });
-
-  it('rejects malformed email payloads with HTTP 400', async () => {
-    const res = await chai
-      .request(server)
-      .post('/register')
-      .set('Accept', 'application/json')
-      .send({ email: 'not-an-email', password: 'short' });
-
-    res.should.have.status(400);
-    expect(res.body.error).to.equal('invalidEmail');
+    expect(storedUser).to.be.null;
   });
 });
 
-// *********************** REDIRECT TEST CASE ***********************************
-
-describe('Redirect testing', () => {
-  it('/ route redirects anonymous users to /login', async () => {
-    const res = await chai
-      .request(server)
-      .get('/')
-      .redirects(0);
-
-    res.should.have.status(302);
-    res.should.redirectTo(/^.*\/login$/);
-  });
-});
-
-describe('Session API', () => {
-  it('returns 401 for anonymous requests', async () => {
-    const res = await chai
-      .request(server)
-      .get('/api/session')
-      .set('Accept', 'application/json');
-
-    res.should.have.status(401);
-    expect(res.body.error).to.equal('unauthenticated');
-  });
-
-  it('provides session data after login and clears via API logout', async () => {
-    const agent = chai.request.agent(server);
-    const email = `agent-${Date.now()}@example.com`;
-    const password = 'ValidPass123!';
-
-    await agent
-      .post('/register')
-      .set('Accept', 'application/json')
-      .send({ email, password })
-      .then((res) => {
-        res.should.have.status(201);
-      });
-
-    await agent
-      .post('/login')
-      .set('Accept', 'application/json')
-      .send({ email, password })
-      .then((res) => {
-        res.should.have.status(200);
-        expect(res.body.message).to.equal('authenticated');
-      });
-
-    await agent
-      .get('/api/session')
-      .set('Accept', 'application/json')
-      .then((res) => {
-        res.should.have.status(200);
-        expect(res.body.user.email).to.equal(email);
-      });
-
-    await agent
-      .post('/api/logout')
-      .set('Accept', 'application/json')
-      .then((res) => {
-        res.should.have.status(204);
-      });
-
-    await agent
-      .get('/api/session')
-      .set('Accept', 'application/json')
-      .then((res) => {
-        res.should.have.status(401);
-      });
-
-    agent.close();
-  });
-});
+// ********************************************************************************

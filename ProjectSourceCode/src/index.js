@@ -139,6 +139,14 @@ app.get('/register', (req, res) => {
   return res.sendFile(path.join(__dirname, '../templates/register.html'));
 });
 
+const wantsHtmlResponse = req => {
+  const accepts = req.headers.accept || '';
+  const contentType = req.headers['content-type'] || '';
+  return (
+    accepts.includes('text/html') || contentType.includes('application/x-www-form-urlencoded')
+  );
+};
+
 app.post('/register', async (req, res) => {
   const email = (req.body.email || '').trim().toLowerCase();
   const password = (req.body.password || '').trim();
@@ -258,3 +266,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
+module.exports.db = db;
