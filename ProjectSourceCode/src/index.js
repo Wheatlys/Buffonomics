@@ -95,9 +95,34 @@ const isValidEmail = (value = '') =>
 const wantsJson = (req) =>
   req.accepts(['html', 'json']) === 'json' || req.is('application/json');
 
+const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || 'connect.sid';
+
 // Serve static assets
 app.use('/static', express.static(path.join(__dirname, '../static')));
 app.use('/scripts', express.static(path.join(__dirname, '../scripts')));
+
+app.get('/api/session', (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'unauthenticated' });
+  }
+  return res.json({ user: req.session.user });
+});
+
+app.post('/api/logout', (req, res) => {
+  if (!req.session) {
+    res.clearCookie(SESSION_COOKIE_NAME);
+    return res.status(204).end();
+  }
+
+  return req.session.destroy((err) => {
+    if (err) {
+      console.error('Logout failed:', err);
+      return res.status(500).json({ error: 'logoutFailed' });
+    }
+    res.clearCookie(SESSION_COOKIE_NAME);
+    return res.status(204).end();
+  });
+});
 
 // Routes for HTML pages
 app.get('/', (req, res) => {
@@ -216,6 +241,7 @@ app.get('/homepage', requireAuth, (req, res) => {
 
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {
+    res.clearCookie(SESSION_COOKIE_NAME);
     res.redirect('/login');
   });
 });

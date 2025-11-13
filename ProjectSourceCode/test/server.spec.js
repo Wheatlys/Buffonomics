@@ -87,3 +87,62 @@ describe('Redirect testing', () => {
     res.should.redirectTo(/^.*\/login$/);
   });
 });
+
+describe('Session API', () => {
+  it('returns 401 for anonymous requests', async () => {
+    const res = await chai
+      .request(server)
+      .get('/api/session')
+      .set('Accept', 'application/json');
+
+    res.should.have.status(401);
+    expect(res.body.error).to.equal('unauthenticated');
+  });
+
+  it('provides session data after login and clears via API logout', async () => {
+    const agent = chai.request.agent(server);
+    const email = `agent-${Date.now()}@example.com`;
+    const password = 'ValidPass123!';
+
+    await agent
+      .post('/register')
+      .set('Accept', 'application/json')
+      .send({ email, password })
+      .then((res) => {
+        res.should.have.status(201);
+      });
+
+    await agent
+      .post('/login')
+      .set('Accept', 'application/json')
+      .send({ email, password })
+      .then((res) => {
+        res.should.have.status(200);
+        expect(res.body.message).to.equal('authenticated');
+      });
+
+    await agent
+      .get('/api/session')
+      .set('Accept', 'application/json')
+      .then((res) => {
+        res.should.have.status(200);
+        expect(res.body.user.email).to.equal(email);
+      });
+
+    await agent
+      .post('/api/logout')
+      .set('Accept', 'application/json')
+      .then((res) => {
+        res.should.have.status(204);
+      });
+
+    await agent
+      .get('/api/session')
+      .set('Accept', 'application/json')
+      .then((res) => {
+        res.should.have.status(401);
+      });
+
+    agent.close();
+  });
+});

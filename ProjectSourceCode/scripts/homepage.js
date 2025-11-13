@@ -20,18 +20,20 @@
     const loadSession = async () => {
       try {
         const response = await fetch('/api/session', {
-          headers: { Accept: 'application/json' }
+          headers: { Accept: 'application/json' },
+          credentials: 'same-origin',
         });
         if (!response.ok) {
           throw new Error('UNAUTHENTICATED');
         }
         const payload = await response.json();
-        const username = payload?.user?.username;
-        if (username) {
-          if (userEl) userEl.textContent = username;
-          showAlert('Session verified. Enjoy exploring Buffonomics!', 'success');
-          setTimeout(clearAlert, 2500);
+        const profile = payload?.user || {};
+        const displayName = profile.email || profile.username || 'Investor';
+        if (userEl) {
+          userEl.textContent = displayName;
         }
+        showAlert('Session verified. Enjoy exploring Buffonomics!', 'success');
+        setTimeout(clearAlert, 2500);
       } catch (err) {
         console.error('Session lookup failed', err);
         showAlert('Session expired. Redirecting to login…');
@@ -45,11 +47,26 @@
       logoutBtn.addEventListener('click', async () => {
         logoutBtn.disabled = true;
         logoutBtn.textContent = 'Signing out…';
+        let success = false;
         try {
-          await fetch('/api/logout', { method: 'POST' });
+          const response = await fetch('/api/logout', {
+            method: 'POST',
+            headers: { Accept: 'application/json' },
+            credentials: 'same-origin',
+          });
+          if (!response.ok && response.status !== 204) {
+            throw new Error('LOGOUT_FAILED');
+          }
+          success = true;
         } catch (err) {
           console.error('Logout failed', err);
-        } finally {
+          showAlert('Trouble signing out. Please try again.');
+          logoutBtn.disabled = false;
+          logoutBtn.textContent = 'Sign Out';
+          return;
+        }
+
+        if (success) {
           window.location.assign('/login');
         }
       });
