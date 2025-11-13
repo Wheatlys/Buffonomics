@@ -53,10 +53,13 @@ describe('Register API', () => {
     const password = 'ValidPassword123!';
 
     try {
-      const res = await chai.request(server).post('/register').send({email, password});
-      expect(res).to.have.status(200);
-      expect(res.body.status).to.equal('success');
-      expect(res.body.message).to.equal('Registration successful');
+      const res = await chai
+        .request(server)
+        .post('/register')
+        .set('Accept', 'application/json')
+        .send({email, password});
+      expect(res).to.have.status(201);
+      expect(res.body.message).to.equal('registered');
 
       const storedUser = await db.oneOrNone(
         'SELECT email, password FROM users WHERE email = $1',
@@ -74,10 +77,13 @@ describe('Register API', () => {
     const email = 'invalid-email';
     const password = 'ValidPassword123!';
 
-    const res = await chai.request(server).post('/register').send({email, password});
+    const res = await chai
+      .request(server)
+      .post('/register')
+      .set('Accept', 'application/json')
+      .send({email, password});
     expect(res).to.have.status(400);
-    expect(res.body.status).to.equal('error');
-    expect(res.body.message).to.equal('Invalid input');
+    expect(res.body.error).to.equal('invalidEmail');
 
     const storedUser = await db.oneOrNone(
       'SELECT email FROM users WHERE email = $1',
