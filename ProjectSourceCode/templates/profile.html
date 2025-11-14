@@ -5,20 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Buffonomics · Profile</title>
 
-  <!-- Reuse existing theme -->
   <link rel="stylesheet" href="../static/css/login.css" />
   <link rel="stylesheet" href="../static/css/homepage.css" />
   <link rel="stylesheet" href="../static/css/profile.css" />
 </head>
 
 <body>
-  <!-- Background -->
   <div class="bg" aria-hidden="true">
     <canvas id="ledBackdrop" class="led-canvas"></canvas>
     <div class="led-scan"></div>
   </div>
 
-  <!-- Top bar -->
   <header class="topbar">
     <div class="topbar__inner">
       <div class="brand">
@@ -32,20 +29,36 @@
     </div>
   </header>
 
-  <!-- Profile content -->
   <main class="profile-container">
     <h1 class="profile-title">Your Profile</h1>
 
+    <!-- PROFILE CARD -->
     <section class="profile-card">
-      <div class="profile-avatar">B</div>
+      <div class="profile-avatar-container">
+        <img 
+          id="profileImage" 
+          class="profile-avatar-img" 
+          src="../static/img/default-avatar.png" 
+          alt="Profile Picture" 
+        />
+
+        <!-- Styled label triggers hidden input -->
+        <label for="avatarUpload" class="avatar-upload-btn">Change Picture</label>
+        <input type="file" id="avatarUpload" accept="image/*" hidden />
+      </div>
 
       <div class="profile-info">
-        <h2 class="profile-name">Buffonomics User</h2>
-        <p class="profile-handle">@you</p>
+        <h2 class="profile-name" id="profileName">Buffonomics User</h2>
+        <p class="profile-handle" id="profileHandle">@you</p>
+
+        <!-- Email from DB -->
+        <p class="profile-email">
+          Email: <span id="profileEmail"></span>
+        </p>
       </div>
     </section>
 
-    <!-- Email Notifications -->
+    <!-- EMAIL NOTIFICATIONS -->
     <section class="settings-section">
       <h3>Email Notifications</h3>
       <label class="toggle">
@@ -53,6 +66,9 @@
         <span class="slider"></span>
       </label>
     </section>
+
+    <!-- SAVE BUTTON (optional backend later) -->
+    <button id="saveProfileBtn" class="btn save-btn">Save Changes</button>
   </main>
 
   <script src="../scripts/profile.js" defer></script>

@@ -1,3 +1,4 @@
+/* === Container === */
 .profile-container {
   max-width: 600px;
   margin: 120px auto;
@@ -11,37 +12,79 @@
   text-align: center;
 }
 
+/* === Profile Card === */
 .profile-card {
   background: rgba(255, 255, 255, 0.05);
   padding: 25px;
   border-radius: 12px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 25px;
   box-shadow: 0 0 20px rgba(0,0,0,0.4);
   margin-bottom: 40px;
 }
 
-.profile-avatar {
-  width: 80px;
-  height: 80px;
-  background: #444;
+/* === Avatar Container === */
+.profile-avatar-container {
+  position: relative;
+  width: 110px;
+  height: 110px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  font-size: 32px;
-  border-radius: 50%;
 }
 
+/* Avatar Image */
+.profile-avatar-img {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #333;
+  border: 2px solid #666;
+  box-shadow: 0 0 8px rgba(0,0,0,0.5);
+}
+
+/* Upload Button */
+.avatar-upload-btn {
+  margin-top: 10px;
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.15);
+  color: white;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+  text-align: center;
+  display: inline-block;
+}
+
+.avatar-upload-btn:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+#avatarUpload {
+  display: none;
+}
+
+/* === Text Info === */
 .profile-info h2 {
   margin: 0;
+  font-size: 1.3rem;
 }
 
 .profile-handle {
   color: #bbb;
-  margin: 0;
+  margin: 5px 0 0 0;
 }
 
+.profile-email {
+  margin-top: 10px;
+  color: #ccc;
+  font-size: 0.95rem;
+}
+
+/* === Email Notification Section === */
 .settings-section {
   margin-top: 40px;
   display: flex;
@@ -52,7 +95,7 @@
   border-radius: 12px;
 }
 
-/* Toggle Switch */
+/* === Toggle Switch === */
 .toggle {
   position: relative;
   display: inline-block;
@@ -89,4 +132,22 @@ input:checked + .slider {
 
 input:checked + .slider:before {
   transform: translateX(24px);
+}
+
+/* === Save Button === */
+.save-btn {
+  display: block;
+  margin: 30px auto;
+  padding: 10px 20px;
+  background: #1e90ff;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: 0.2s;
+  border: none;
+}
+
+.save-btn:hover {
+  background: #63b3ff;
 }
