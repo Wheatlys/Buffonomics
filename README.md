@@ -26,8 +26,8 @@ Containerization:
 - Docker
 
 External API:
-We will be using Financial Modeling Prep's free API for stock market and politician trading data. 
-[Link](https://site.financialmodelingprep.com/developer/docs)
+We will be using Quiver Quant's API for stock market and politician trading data. 
+[Link](https://api.quiverquant.com/docs/#/)
 
 ## Prerequisites to run the application
 Docker Desktop
