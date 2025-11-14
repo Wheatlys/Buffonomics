@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>Buffonomics · Settings</title>
+
+  <!-- Reuse LED theme + settings-specific styles -->
+  <link rel="stylesheet" href="../static/css/login.css" />
+  <link rel="stylesheet" href="../static/css/settings.css" />
+</head>
+<body>
+  <!-- Black canvas background -->
+  <div class="bg" aria-hidden="true">
+    <canvas id="ledBackdrop" class="led-canvas"></canvas>
+    <div class="led-scan"></div>
+  </div>
+
+  <div class="settings-shell">
+    <!-- Top bar -->
+    <header class="settings-topbar">
+      <div class="settings-topbar__inner">
+        <div class="brand">
+          <span class="brand__text">Buffonomics</span><span class="brand__caret">▌</span>
+        </div>
+        <a href="./homepage.html" class="back-link">← Back to feed</a>
+      </div>
+    </header>
+
+    <!-- Settings card -->
+    <main class="settings-main">
+      <section class="settings-card">
+        <h1 class="settings-title">User Settings</h1>
+        <p class="settings-subtitle">Update how you appear in Buffonomics.</p>
+
+        <form id="settingsForm" autocomplete="off">
+          <!-- Account section -->
+          <h2 class="section-heading">Account</h2>
+          <div class="field">
+            <label for="displayName">Display name</label>
+            <input type="text" id="displayName" name="displayName" placeholder="Buffonomics User" />
+          </div>
+
+          <div class="field">
+            <label for="handle">Handle</label>
+            <div class="handle-wrap">
+              <span class="handle-prefix">@</span>
+              <input type="text" id="handle" name="handle" placeholder="you" />
+            </div>
+            <p class="field-help">This is how your name appears on cards and in comments.</p>
+          </div>
+
+          <div class="field">
+            <label for="email">Email (optional)</label>
+            <input type="email" id="email" name="email" placeholder="you@example.com" />
+          </div>
+
+          <!-- Actions -->
+          <div class="actions">
+            <button type="submit" class="btn primary">Save changes</button>
+            <button type="button" id="resetSettings" class="btn ghost">Reset to defaults</button>
+          </div>
+
+          <p id="saveStatus" class="save-status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script src="../scripts/settings.js" defer></script>
+</body>
+</html>
