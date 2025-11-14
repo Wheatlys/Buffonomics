@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buffonomics · Profile</title>
+
+  <!-- Reuse existing theme -->
+  <link rel="stylesheet" href="../static/css/login.css" />
+  <link rel="stylesheet" href="../static/css/homepage.css" />
+  <link rel="stylesheet" href="../static/css/profile.css" />
+</head>
+
+<body>
+  <!-- Background -->
+  <div class="bg" aria-hidden="true">
+    <canvas id="ledBackdrop" class="led-canvas"></canvas>
+    <div class="led-scan"></div>
+  </div>
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="topbar__inner">
+      <div class="brand">
+        <span class="brand__text">Buffonomics</span><span class="brand__caret">▌</span>
+      </div>
+
+      <nav class="navlinks">
+        <a class="muted-link" href="./homepage.html">Home</a>
+        <a class="muted-link" href="./settings.html">Settings</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Profile content -->
+  <main class="profile-container">
+    <h1 class="profile-title">Your Profile</h1>
+
+    <section class="profile-card">
+      <div class="profile-avatar">B</div>
+
+      <div class="profile-info">
+        <h2 class="profile-name">Buffonomics User</h2>
+        <p class="profile-handle">@you</p>
+      </div>
+    </section>
+
+    <!-- Email Notifications -->
+    <section class="settings-section">
+      <h3>Email Notifications</h3>
+      <label class="toggle">
+        <input type="checkbox" id="emailToggle">
+        <span class="slider"></span>
+      </label>
+    </section>
+  </main>
+
+  <script src="../scripts/profile.js" defer></script>
+  <script src="../scripts/homepage.js" defer></script>
+</body>
+</html>
