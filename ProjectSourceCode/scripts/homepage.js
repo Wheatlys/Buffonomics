@@ -22,6 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
   drawSolidBlack();
   window.addEventListener('resize', drawSolidBlack);
 });
+// Load profile image on homepage
+const homeProfileImage = document.getElementById("homeProfileImage");
+if (homeProfileImage) {
+  const savedImg = localStorage.getItem("profileImage");
+  homeProfileImage.src = savedImg || "../static/img/default-avatar.png";
+}
 
 // ====== Right Panel Toggle (hamburger) ======
 document.addEventListener('DOMContentLoaded', () => {
