@@ -6,9 +6,7 @@
   <meta name="color-scheme" content="dark" />
   <title>Buffonomics · Sign In</title>
 
-  <!-- If you open the file directly as file:// keep ../static/... -->
-  <!-- If you run a server from project root, you may also use /static/css/login.css -->
-  <link rel="stylesheet" href="../static/css/login.css" />
+  <link rel="stylesheet" href="/static/css/login.css" />
 </head>
 <body>
   <!-- LED Background -->
@@ -27,17 +25,18 @@
       <div class="panel-inner">
         <h1 class="welcome">Welcome Back</h1>
 
-        <form class="js-signin-form" action="#" method="post" novalidate>
+        <form class="js-auth-form" data-context="login" action="/login" method="post" novalidate>
+          <div class="form-alert" data-alert role="alert" hidden></div>
           <div class="field">
-            <label class="label" for="username">› Username</label>
-            <input class="input" id="username" name="username" type="text"
-                   placeholder="Username" autocomplete="username" autofocus />
+            <label class="label" for="email">› Email</label>
+            <input class="input" id="email" name="email" type="email"
+                   placeholder="Email" autocomplete="email" autofocus required />
           </div>
 
           <div class="field">
             <label class="label" for="password">› Password</label>
             <input class="input" id="password" name="password" type="password"
-                   placeholder="Password" autocomplete="current-password" />
+                   placeholder="Password" autocomplete="current-password" required />
           </div>
 
           <div class="field field--row">
@@ -54,7 +53,7 @@
             </button>
           </div>
 
-          <p class="help">Don't have an account? <a href="#">Sign up</a></p>
+          <p class="help">Don't have an account? <a href="/register">Sign up</a></p>
         </form>
       </div>
     </section>
@@ -72,7 +71,6 @@
     </aside>
   </main>
 
-  <!-- Same rule as CSS: keep ../scripts/... for file:// ; /scripts/... works if served from root -->
-  <script src="../scripts/login.js" defer></script>
+  <script src="/scripts/login.js" defer></script>
 </body>
 </html>
