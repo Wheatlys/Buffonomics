@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Buffonomics · API Test</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 2rem;
+      background: #050506;
+      color: #f2f2f7;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    form, pre, textarea {
+      width: min(640px, 100%);
+    }
+    form {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      margin-bottom: 1rem;
+    }
+    label {
+      display: flex;
+      flex-direction: column;
+      font-size: 0.9rem;
+      gap: 0.4rem;
+    }
+    input {
+      padding: 0.5rem 0.65rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+      color: inherit;
+      font-size: 1rem;
+    }
+    button {
+      border: none;
+      border-radius: 6px;
+      padding: 0.55rem 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: #f6c85e;
+      color: #050506;
+    }
+    .card {
+      background: #0f0f16;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    pre {
+      background: #111118;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow: auto;
+      min-height: 180px;
+    }
+    .status {
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      color: #f6c85e;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .grid div {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      padding: 0.75rem;
+    }
+    dt {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      color: #aaa;
+      margin-bottom: 0.25rem;
+    }
+    dd {
+      margin: 0;
+      font-size: 1.1rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .muted {
+      color: #c5c5cf;
+      margin-top: 0.25rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    th {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #bbb;
+    }
+    tbody tr:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+  </style>
+</head>
+<body>
+  <h1>Financial Modeling Prep · Stock Snapshot</h1>
+  <p>Enter a ticker symbol to see live fundamentals pulled via the backend proxy (using the API key in your <code>.env</code>).</p>
+
+  <form id="stockForm">
+    <label>
+      Stock Ticker
+      <input type="text" id="ticker" name="ticker" placeholder="AAPL" required />
+    </label>
+    <label>
+      Override FMP API Key (optional)
+      <input type="text" id="apiKey" name="apiKey" placeholder="Leave blank to use .env" />
+    </label>
+    <button type="submit">Fetch Snapshot</button>
+  </form>
+
+  <div class="status" id="status">Awaiting request…</div>
+
+  <section class="card">
+    <h2 id="companyName">—</h2>
+    <p id="companyDescription" class="muted">No data yet.</p>
+    <dl class="grid">
+      <div>
+        <dt>Price</dt>
+        <dd id="price">—</dd>
+      </div>
+      <div>
+        <dt>Day Change</dt>
+        <dd id="change">—</dd>
+      </div>
+      <div>
+        <dt>Market Cap</dt>
+        <dd id="marketCap">—</dd>
+      </div>
+      <div>
+        <dt>P/E Ratio</dt>
+        <dd id="peRatio">—</dd>
+      </div>
+      <div>
+        <dt>52W Range</dt>
+        <dd id="range">—</dd>
+      </div>
+      <div>
+        <dt>Volume Avg</dt>
+        <dd id="volume">—</dd>
+      </div>
+    </dl>
+    <pre id="rawOutput">{ }</pre>
+  </section>
+
+  <section class="card">
+    <h2>Congress Trading Activity (QuiverQuant)</h2>
+    <p class="muted">Pull the latest House trades via Quiver’s <code>/beta/live/housetrading</code> endpoint.</p>
+    <form id="politicianForm">
+      <label>
+        Politician Name
+        <input type="text" id="politicianName" placeholder="Optional (filters results)" />
+      </label>
+      <label>
+        Include Options
+        <input type="checkbox" id="politicianOptions" />
+      </label>
+      <label>
+        Override Quiver API Key (optional)
+        <input type="text" id="quiverApiKey" placeholder="Leave blank to use .env" />
+      </label>
+      <button type="submit">Fetch Activity</button>
+    </form>
+    <div class="status" id="politicianStatus">Awaiting request…</div>
+    <div class="table-wrapper">
+      <table id="politicianTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Symbol</th>
+            <th>Trade Date</th>
+            <th>Type</th>
+            <th>Amount/Range</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="5">No data yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <pre id="politicianRaw">{ }</pre>
+  </section>
+
+  <script>
+    const form = document.getElementById('stockForm');
+    const statusEl = document.getElementById('status');
+    const fmpApiKeyInput = document.getElementById('apiKey');
+    const quiverApiKeyInput = document.getElementById('quiverApiKey');
+    const rawOutput = document.getElementById('rawOutput');
+
+    const fields = {
+      companyName: document.getElementById('companyName'),
+      companyDescription: document.getElementById('companyDescription'),
+      price: document.getElementById('price'),
+      change: document.getElementById('change'),
+      marketCap: document.getElementById('marketCap'),
+      peRatio: document.getElementById('peRatio'),
+      range: document.getElementById('range'),
+      volume: document.getElementById('volume'),
+    };
+
+    const getFmpApiKey = () => fmpApiKeyInput.value.trim();
+    const getQuiverApiKey = () => quiverApiKeyInput.value.trim();
+
+    const buildProxyUrl = (path, extra = {}, proxy = '/api/fmp', apiKeyOverride = '') => {
+      const url = new URL(proxy, window.location.origin);
+      url.searchParams.set('path', path);
+      if (apiKeyOverride) {
+        url.searchParams.set('apikey', apiKeyOverride);
+      }
+      Object.entries(extra).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          url.searchParams.set(key, value);
+        }
+      });
+      return url;
+    };
+
+    const formatCurrency = (value) => {
+      if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
+      return Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value));
+    };
+
+    const formatNumber = (value) => {
+      if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
+      return Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 2 }).format(Number(value));
+    };
+
+    const updateSnapshot = (profile = {}, quote = {}) => {
+      fields.companyName.textContent = profile.companyName || profile.name || quote.name || 'Unknown company';
+      fields.companyDescription.textContent = profile.description || 'No description available.';
+      fields.price.textContent = formatCurrency(quote.price ?? profile.price);
+      const changePercent = quote.changesPercentage ?? profile.changesPercentage;
+      const numericChange = Number(changePercent);
+      fields.change.textContent = Number.isFinite(numericChange)
+        ? `${numericChange.toFixed(2)}%`
+        : '—';
+      fields.marketCap.textContent = formatNumber(quote.marketCap ?? profile.marketCap);
+      const peValue = Number(quote.pe ?? profile.pe);
+      fields.peRatio.textContent = Number.isFinite(peValue) ? peValue.toFixed(2) : '—';
+      fields.range.textContent = quote.range || profile.range || '—';
+      fields.volume.textContent = formatNumber(quote.volAvg ?? profile.volAvg ?? quote.volume);
+    };
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const ticker = document.getElementById('ticker').value.trim().toUpperCase();
+      if (!ticker) {
+        statusEl.textContent = 'Enter a ticker symbol.';
+        return;
+      }
+
+      statusEl.textContent = `Fetching data for ${ticker}…`;
+      rawOutput.textContent = '';
+
+      try {
+        const [profileRes, quoteRes] = await Promise.all([
+          fetch(buildProxyUrl('/stable/profile', { symbol: ticker }, '/api/fmp', getFmpApiKey())),
+          fetch(buildProxyUrl('/stable/quote', { symbol: ticker }, '/api/fmp', getFmpApiKey())),
+        ]);
+
+        const profileJson = await profileRes.json().catch(() => []);
+        const quoteJson = await quoteRes.json().catch(() => []);
+
+        if (!profileRes.ok || !quoteRes.ok) {
+          statusEl.textContent = `Error fetching data (${profileRes.status}/${quoteRes.status})`;
+          rawOutput.textContent = JSON.stringify({ profile: profileJson, quote: quoteJson }, null, 2);
+          return;
+        }
+
+        const profile = Array.isArray(profileJson) ? profileJson[0] : profileJson;
+        const quote = Array.isArray(quoteJson) ? quoteJson[0] : quoteJson;
+        updateSnapshot(profile, quote);
+        rawOutput.textContent = JSON.stringify({ profile, quote }, null, 2);
+        statusEl.textContent = `Loaded ${ticker}`;
+      } catch (error) {
+        statusEl.textContent = 'Request failed';
+        rawOutput.textContent = error.message;
+      }
+    });
+
+    const politicianForm = document.getElementById('politicianForm');
+    const politicianStatus = document.getElementById('politicianStatus');
+    const politicianTableBody = document.querySelector('#politicianTable tbody');
+    const politicianRaw = document.getElementById('politicianRaw');
+
+    const formatDate = (value) => {
+      if (!value) return '—';
+      return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    };
+
+    const renderPoliticianRows = (records = []) => {
+      politicianTableBody.innerHTML = '';
+      if (!records.length) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 5;
+        cell.textContent = 'No filings found.';
+        row.appendChild(cell);
+        politicianTableBody.appendChild(row);
+        return;
+      }
+
+      records.forEach((record) => {
+        const row = document.createElement('tr');
+        const amount = record.Range || record.Amount || record.amountRange || record.value || '—';
+        row.innerHTML = `
+          <td>${record.Representative || record.representative || '—'}</td>
+          <td>${record.Ticker || record.symbol || '—'}</td>
+          <td>${formatDate(record.Date || record.transactionDate)}</td>
+          <td>${record.Transaction || record.type || record.transaction || '—'}</td>
+          <td>${amount}</td>
+        `;
+        politicianTableBody.appendChild(row);
+      });
+    };
+
+    politicianForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const name = document.getElementById('politicianName').value.trim();
+      const includeOptions = document.getElementById('politicianOptions').checked;
+
+      politicianStatus.textContent = 'Fetching House filings…';
+      politicianRaw.textContent = '';
+      try {
+        const query = {};
+        if (name) query.name = name;
+        if (includeOptions) query.options = true;
+
+        const response = await fetch(
+          buildProxyUrl('/beta/live/housetrading', query, '/api/quiver', getQuiverApiKey()),
+        );
+        const data = await response.json().catch(() => []);
+
+        if (!response.ok) {
+          politicianStatus.textContent = `Error (${response.status})`;
+          politicianRaw.textContent = JSON.stringify(data, null, 2);
+          renderPoliticianRows([]);
+          return;
+        }
+
+        renderPoliticianRows(Array.isArray(data) ? data : []);
+        politicianRaw.textContent = JSON.stringify(data, null, 2);
+        politicianStatus.textContent = `Loaded ${data.length} records`;
+      } catch (error) {
+        politicianStatus.textContent = 'Request failed';
+        politicianRaw.textContent = error.message;
+        renderPoliticianRows([]);
+      }
+    });
+  </script>
+</body>
+</html>
