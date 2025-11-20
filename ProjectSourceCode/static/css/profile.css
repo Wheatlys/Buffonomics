@@ -151,3 +151,74 @@ input:checked + .slider:before {
 .save-btn:hover {
   background: #63b3ff;
 }
+/* === Politicians Followed === */
+.politicians-section {
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.politicians-section h3 {
+  margin: 0 0 6px 0;
+}
+
+/* small muted text under the header */
+.muted-small {
+  color: #bbb;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+/* Wrapper to hold the scrollable list */
+.politicians-wrapper {
+  width: 260px; /* adjust as needed */
+  max-width: 100%;
+}
+
+/* Scrollable list */
+.politicians-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  max-height: 200px;      /* controls scroll height */
+  overflow-y: auto;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+
+/* Individual politician item */
+.politician-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.02);
+}
+
+.politician-item:last-child {
+  border-bottom: none;
+}
+
+.politician-name {
+  font-size: 0.95rem;
+  margin: 0;
+  color: #eee;
+}
+
+.politician-meta {
+  font-size: 0.85rem;
+  color: #bbb;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+/* Empty placeholder */
+.politicians-empty {
+  padding: 12px;
+  color: #ccc;
+  font-size: 0.95rem;
+  background: rgba(255,255,255,0.02);
+  border-radius: 6px;
+}

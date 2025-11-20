@@ -57,6 +57,7 @@
         </p>
       </div>
     </section>
+    
 
     <!-- EMAIL NOTIFICATIONS -->
     <section class="settings-section">
@@ -65,6 +66,23 @@
         <input type="checkbox" id="emailToggle">
         <span class="slider"></span>
       </label>
+    </section>
+      <!-- POLITICIANS FOLLOWED -->
+    <section id="politiciansSection" class="settings-section politicians-section">
+      <div>
+        <h3>Politicians Followed</h3>
+        <p class="muted-small">Scroll to view the people you follow</p>
+      </div>
+
+      <div class="politicians-wrapper">
+        <ul id="politiciansList" class="politicians-list" aria-live="polite">
+          <!-- JS will render list items here -->
+        </ul>
+
+        <div id="politiciansEmpty" class="politicians-empty" hidden>
+          You aren't following anyone yet.
+        </div>
+      </div>
     </section>
 
     <!-- SAVE BUTTON (optional backend later) -->
