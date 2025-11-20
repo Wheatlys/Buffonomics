@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Buffonomics · Politician Profile</title>
+  <link rel="stylesheet" href="/static/css/politicians.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="app-bar">
+      <div class="app-bar__brand">
+        <span class="brand-pill">Buffonomics</span>
+        <nav class="app-bar__nav" aria-label="Primary">
+          <button type="button" class="nav-link nav-link--active">Overview</button>
+          <button type="button" class="nav-link">Watchlists</button>
+          <button type="button" class="nav-link">Trade Log</button>
+          <button type="button" class="nav-link">Settings</button>
+        </nav>
+      </div>
+      <div class="app-bar__status">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span class="status-text">Session Active</span>
+        <a class="logout-btn" href="/logout">Logout</a>
+      </div>
+    </header>
+
+    <section class="hero-card">
+      <div>
+        <p class="hero-card__eyebrow">Portfolio Snapshot</p>
+        <h1 class="hero-card__title" id="heroHeadline">No data yet</h1>
+        <p class="hero-card__copy" id="heroSubline">
+          Connect your preferred data source to see performance, positions, and alerts.
+        </p>
+      </div>
+      <form class="hero-card__search" id="politicianSearch" autocomplete="off">
+        <label for="searchInput" class="sr-only">Search Politician</label>
+        <input id="searchInput" name="query" type="search" placeholder="Enter a name (e.g. Nancy Pelosi)" required />
+        <button class="btn" type="submit">Search</button>
+      </form>
+    </section>
+
+    <main class="dashboard">
+      <aside class="stack">
+        <section class="stack-card profile" aria-live="polite">
+          <p class="stack-card__eyebrow">Profile</p>
+          <h2 class="stack-card__title">Trading Overview</h2>
+          <div class="profile__identity">
+            <p class="profile__name" id="politicianName">—</p>
+            <p class="profile__position" id="politicianPosition">—</p>
+            <p class="profile__party" id="politicianParty">—</p>
+            <button type="button" class="profile__follow">Follow Trading Activity</button>
+          </div>
+
+          <dl class="profile__stats">
+            <div>
+              <dt>Trade Volume</dt>
+              <dd id="statTradeVolume">—</dd>
+            </div>
+            <div>
+              <dt>Total Trades</dt>
+              <dd id="statTotalTrades">—</dd>
+            </div>
+            <div>
+              <dt>Last Traded</dt>
+              <dd id="statLastTraded">—</dd>
+            </div>
+            <div>
+              <dt>Current Member</dt>
+              <dd id="statCurrentMember">—</dd>
+            </div>
+          </dl>
+        </section>
+
+      </aside>
+
+      <section class="board">
+        <header class="board__header">
+          <div>
+            <p class="board__eyebrow">Trades</p>
+            <h2 class="board__title">Transaction Ledger</h2>
+          </div>
+          <div class="board__totals">
+            <p><span id="tradeVolumeTotal">—</span><small>Trade Volume</small></p>
+            <p><span id="tradeCountTotal">—</span><small>Total Trades</small></p>
+          </div>
+        </header>
+
+        <table class="trades__table">
+          <thead>
+            <tr>
+              <th scope="col">Stock</th>
+              <th scope="col">Transaction</th>
+              <th scope="col">Filed</th>
+              <th scope="col">Traded</th>
+              <th scope="col">Range</th>
+              <th scope="col">Amount</th>
+              <th scope="col">Description</th>
+              <th scope="col">Excess Return</th>
+            </tr>
+          </thead>
+          <tbody id="tradesTableBody">
+            <tr>
+              <td colspan="8">Search for a politician to load trades…</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+
+    <section class="debug">
+      <header class="debug__header">
+        <div>
+          <p class="debug__eyebrow">API Inspector</p>
+          <h3 class="debug__title">Raw Response</h3>
+        </div>
+        <p class="debug__hint">This shows the last payload returned by the API for comparison.</p>
+      </header>
+      <pre id="rawApiPayload" class="debug__pre" aria-live="polite">No data loaded yet.</pre>
+    </section>
+  </div>
+
+  <script src="/scripts/politicians.js" defer></script>
+</body>
+</html>

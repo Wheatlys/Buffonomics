@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const pgp = require('pg-promise')();
+const { fetchExternalPolitician, normalizeQuery } = require('./services/politicians');
 
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
@@ -55,6 +56,280 @@ const createMemoryDb = () => {
   };
 };
 
+const createInMemoryPoliticianRepo = () => {
+  const politicians = new Map();
+  const queryIndex = new Map();
+  const trades = new Map();
+  let politicianSeq = 0;
+  let tradeSeq = 0;
+
+  const clone = (obj) => (obj ? JSON.parse(JSON.stringify(obj)) : null);
+
+  const getTradesFor = (politicianId) => Array
+    .from(trades.values())
+    .filter((trade) => trade.politician_id === politicianId)
+    .sort((a, b) => {
+      const dateA = new Date(a.traded_date || a.filed_date || 0);
+      const dateB = new Date(b.traded_date || b.filed_date || 0);
+      return dateB - dateA;
+    })
+    .map((record) => clone(record));
+
+  return {
+    async getByQueryKey(queryKey) {
+      const id = queryIndex.get(queryKey);
+      if (!id) return null;
+      if (!politicians.has(id)) return null;
+      return {
+        record: clone(politicians.get(id)),
+        trades: getTradesFor(id),
+      };
+    },
+    async upsert(queryKey, payload) {
+      let politicianId = queryIndex.get(queryKey);
+      if (!politicianId) {
+        politicianSeq += 1;
+        politicianId = politicianSeq;
+        queryIndex.set(queryKey, politicianId);
+      }
+
+      const record = {
+        id: politicianId,
+        query_key: queryKey,
+        name: payload.name,
+        party: payload.party,
+        position: payload.position,
+        networth: payload.netWorth,
+        trade_volume: payload.tradeVolume,
+        total_trades: payload.totalTrades,
+        last_traded: payload.lastTraded,
+        years_active: payload.yearsActive,
+        current_member: payload.currentMember,
+        avatar_url: payload.avatarUrl,
+        updated_at: new Date(),
+      };
+      politicians.set(politicianId, record);
+
+      Array.from(trades.entries()).forEach(([id, trade]) => {
+        if (trade.politician_id === politicianId) {
+          trades.delete(id);
+        }
+      });
+
+      (payload.trades || []).forEach((trade) => {
+        tradeSeq += 1;
+        const tradeRecord = {
+          id: tradeSeq,
+          politician_id: politicianId,
+          stock_symbol: trade.stockSymbol,
+          transaction_type: trade.transactionType,
+          filed_date: trade.filedDate,
+          traded_date: trade.tradedDate,
+          amount_range: trade.amountRange,
+          amount_value: trade.amountValue,
+          description: trade.description,
+          est_return: trade.estReturn,
+          chamber: trade.chamber,
+          district: trade.district,
+          party: trade.party,
+          ticker_type: trade.tickerType,
+          excess_return: trade.excessReturn,
+          price_change: trade.priceChange,
+          spy_change: trade.spyChange,
+          last_modified: trade.lastModified,
+        };
+        trades.set(tradeRecord.id, tradeRecord);
+      });
+
+      return {
+        record: clone(record),
+        trades: getTradesFor(politicianId),
+      };
+    },
+  };
+};
+
+const createPgPoliticianRepo = (dbInstance) => ({
+  async getByQueryKey(queryKey) {
+    const record = await dbInstance.oneOrNone('SELECT * FROM politicians WHERE query_key = $1', [queryKey]);
+    if (!record) return null;
+    const trades = await dbInstance.any(
+      `SELECT id, politician_id, stock_symbol, transaction_type, filed_date,
+        traded_date, amount_range, amount_value, description, est_return,
+        chamber, district, party, ticker_type, excess_return, price_change,
+        spy_change, last_modified
+       FROM trades
+       WHERE politician_id = $1
+       ORDER BY traded_date DESC NULLS LAST, filed_date DESC NULLS LAST, id DESC`,
+      [record.id],
+    );
+    return { record, trades };
+  },
+  async upsert(queryKey, payload) {
+    return dbInstance.tx(async (t) => {
+      let record = await t.oneOrNone('SELECT * FROM politicians WHERE query_key = $1', [queryKey]);
+      if (record) {
+        record = await t.one(
+          `UPDATE politicians
+             SET name=$1, party=$2, position=$3, networth=$4, trade_volume=$5,
+                 total_trades=$6, last_traded=$7, years_active=$8, current_member=$9,
+                 avatar_url=$10, updated_at=NOW()
+           WHERE id=$11
+           RETURNING *`,
+          [
+            payload.name,
+            payload.party,
+            payload.position,
+            payload.netWorth,
+            payload.tradeVolume,
+            payload.totalTrades,
+            payload.lastTraded,
+            payload.yearsActive,
+            payload.currentMember,
+            payload.avatarUrl,
+            record.id,
+          ],
+        );
+        await t.none('DELETE FROM trades WHERE politician_id = $1', [record.id]);
+      } else {
+        record = await t.one(
+          `INSERT INTO politicians(
+             query_key, name, party, position, networth, trade_volume,
+             total_trades, last_traded, years_active, current_member, avatar_url
+           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+           RETURNING *`,
+          [
+            queryKey,
+            payload.name,
+            payload.party,
+            payload.position,
+            payload.netWorth,
+            payload.tradeVolume,
+            payload.totalTrades,
+            payload.lastTraded,
+            payload.yearsActive,
+            payload.currentMember,
+            payload.avatarUrl,
+          ],
+        );
+      }
+
+      if (payload.trades?.length) {
+        await t.batch(payload.trades.map((trade) => t.none(
+          `INSERT INTO trades(
+             politician_id, stock_symbol, transaction_type, filed_date,
+             traded_date, amount_range, amount_value, description, est_return,
+             chamber, district, party, ticker_type, excess_return, price_change,
+             spy_change, last_modified
+           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+          [
+            record.id,
+            trade.stockSymbol,
+            trade.transactionType,
+            trade.filedDate,
+            trade.tradedDate,
+            trade.amountRange,
+            trade.amountValue,
+            trade.description,
+            trade.estReturn,
+            trade.chamber,
+            trade.district,
+            trade.party,
+            trade.tickerType,
+            trade.excessReturn,
+            trade.priceChange,
+            trade.spyChange,
+            trade.lastModified,
+          ],
+        )));
+      }
+
+      const trades = await t.any(
+        `SELECT id, politician_id, stock_symbol, transaction_type, filed_date,
+          traded_date, amount_range, amount_value, description, est_return,
+          chamber, district, party, ticker_type, excess_return, price_change,
+          spy_change, last_modified
+         FROM trades
+         WHERE politician_id = $1
+         ORDER BY traded_date DESC NULLS LAST, filed_date DESC NULLS LAST, id DESC`,
+        [record.id],
+      );
+
+      return { record, trades };
+    });
+  },
+});
+
+const createPoliticianRepository = (dbInstance, inMemory) => (inMemory
+  ? createInMemoryPoliticianRepo()
+  : createPgPoliticianRepo(dbInstance));
+
+const toIsoDate = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return value.toISOString().split('T')[0];
+  }
+  if (typeof value === 'string' && value.includes('T')) {
+    return value.split('T')[0];
+  }
+  return value;
+};
+
+const formatTradeRecord = (trade) => ({
+  id: trade.id,
+  stockSymbol: trade.stock_symbol || trade.stockSymbol,
+  transactionType: trade.transaction_type || trade.transactionType,
+  filedDate: toIsoDate(trade.filed_date || trade.filedDate),
+  tradedDate: toIsoDate(trade.traded_date || trade.tradedDate),
+  amountRange: trade.amount_range || trade.amountRange,
+  amountValue: trade.amount_value !== null && trade.amount_value !== undefined
+    ? Number(trade.amount_value)
+    : (trade.amountValue !== undefined ? trade.amountValue : null),
+  description: trade.description,
+  estReturn: trade.est_return || trade.estReturn,
+  chamber: trade.chamber || trade.Chamber,
+  district: trade.district || trade.District,
+  party: trade.party,
+  tickerType: trade.ticker_type || trade.tickerType,
+  excessReturn: trade.excess_return !== null && trade.excess_return !== undefined
+    ? Number(trade.excess_return)
+    : (trade.excessReturn !== undefined ? trade.excessReturn : null),
+  priceChange: trade.price_change !== null && trade.price_change !== undefined
+    ? Number(trade.price_change)
+    : (trade.priceChange !== undefined ? trade.priceChange : null),
+  spyChange: trade.spy_change !== null && trade.spy_change !== undefined
+    ? Number(trade.spy_change)
+    : (trade.spyChange !== undefined ? trade.spyChange : null),
+  lastModified: trade.last_modified || trade.lastModified,
+  type: ((trade.transaction_type || trade.transactionType || '')).toLowerCase().includes('sale')
+    ? 'sell'
+    : 'buy',
+});
+
+const formatPoliticianResponse = (record, trades = []) => ({
+  id: record.id,
+  name: record.name,
+  party: record.party,
+  position: record.position,
+  netWorth: record.networth !== null && record.networth !== undefined
+    ? Number(record.networth)
+    : null,
+  tradeVolume: record.trade_volume !== null && record.trade_volume !== undefined
+    ? Number(record.trade_volume)
+    : null,
+  totalTrades: record.total_trades !== null && record.total_trades !== undefined
+    ? Number(record.total_trades)
+    : trades.length,
+  lastTraded: toIsoDate(record.last_traded),
+  yearsActive: record.years_active,
+  currentMember: record.current_member,
+  avatarUrl: record.avatar_url,
+  updatedAt: record.updated_at instanceof Date
+    ? record.updated_at.toISOString()
+    : record.updated_at,
+  trades: trades.map(formatTradeRecord),
+});
+
 const db = useMemoryDb ? createMemoryDb() : pgp({
   host: process.env.DB_HOST
     || process.env.POSTGRES_HOST
@@ -69,6 +344,63 @@ const db = useMemoryDb ? createMemoryDb() : pgp({
   password: process.env.POSTGRES_PASSWORD || 'postgres',
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
 });
+const politicianRepo = createPoliticianRepository(db, useMemoryDb);
+
+const ensurePoliticianTables = async () => {
+  if (useMemoryDb) return;
+  try {
+    await db.none(`CREATE TABLE IF NOT EXISTS politicians(
+      id SERIAL PRIMARY KEY,
+      query_key TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      party TEXT,
+      position TEXT,
+      networth NUMERIC,
+      trade_volume NUMERIC,
+      total_trades INTEGER,
+      last_traded DATE,
+      years_active TEXT,
+      current_member BOOLEAN,
+      avatar_url TEXT,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );`);
+    await db.none(`CREATE TABLE IF NOT EXISTS trades(
+      id SERIAL PRIMARY KEY,
+      politician_id INTEGER NOT NULL REFERENCES politicians(id) ON DELETE CASCADE,
+      stock_symbol TEXT NOT NULL,
+      transaction_type TEXT,
+      filed_date DATE,
+      traded_date DATE,
+      amount_range TEXT,
+      amount_value NUMERIC,
+      description TEXT,
+      est_return TEXT,
+      chamber TEXT,
+      district TEXT,
+      party TEXT,
+      ticker_type TEXT,
+      excess_return NUMERIC,
+      price_change NUMERIC,
+      spy_change NUMERIC,
+      last_modified TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );`);
+    await db.none('ALTER TABLE trades ADD COLUMN IF NOT EXISTS amount_value NUMERIC;');
+    await db.none('ALTER TABLE trades ADD COLUMN IF NOT EXISTS chamber TEXT;');
+    await db.none('ALTER TABLE trades ADD COLUMN IF NOT EXISTS district TEXT;');
+    await db.none('ALTER TABLE trades ADD COLUMN IF NOT EXISTS party TEXT;');
+    await db.none('ALTER TABLE trades ADD COLUMN IF NOT EXISTS ticker_type TEXT;');
+    await db.none('ALTER TABLE trades ADD COLUMN IF NOT EXISTS excess_return NUMERIC;');
+    await db.none('ALTER TABLE trades ADD COLUMN IF NOT EXISTS price_change NUMERIC;');
+    await db.none('ALTER TABLE trades ADD COLUMN IF NOT EXISTS spy_change NUMERIC;');
+    await db.none('ALTER TABLE trades ADD COLUMN IF NOT EXISTS last_modified TIMESTAMPTZ;');
+    await db.none('CREATE INDEX IF NOT EXISTS idx_trades_politician_id ON trades(politician_id);');
+  } catch (error) {
+    console.error('Failed to ensure politician tables exist:', error);
+  }
+};
+
+const ensurePoliticianTablesPromise = ensurePoliticianTables();
 
 const app = express();
 app.use(bodyParser.json());
@@ -126,15 +458,15 @@ app.post('/api/logout', (req, res) => {
 
 // Routes for HTML pages
 app.get('/', (req, res) => {
-  if (req.session.user) {
-    return res.redirect('/homepage');
+  if (!req.session.user) {
+    return res.redirect('/login');
   }
-  return res.redirect('/login');
+  return res.sendFile(path.join(__dirname, '../templates/homepage.html'));
 });
 
 app.get('/register', (req, res) => {
   if (req.session.user) {
-    return res.redirect('/homepage');
+    return res.redirect('/');
   }
   return res.sendFile(path.join(__dirname, '../templates/register.html'));
 });
@@ -192,7 +524,7 @@ app.post('/register', async (req, res) => {
 
 app.get('/login', (req, res) => {
   if (req.session.user) {
-    return res.redirect('/homepage');
+    return res.redirect('/');
   }
   return res.sendFile(path.join(__dirname, '../templates/login.html'));
 });
@@ -233,7 +565,7 @@ app.post('/login', async (req, res) => {
     if (wantsJson(req)) {
       return res.status(200).json({ message: 'authenticated' });
     }
-    return res.redirect('/homepage');
+    return res.redirect('/');
   } catch (error) {
     console.error('Login failed:', error);
     if (wantsJson(req)) {
@@ -245,6 +577,55 @@ app.post('/login', async (req, res) => {
 
 app.get('/homepage', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, '../templates/homepage.html'));
+});
+
+app.get('/politician', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, '../templates/politician.html'));
+});
+
+app.get('/api/politicians', requireAuth, async (req, res) => {
+  const queryValue = req.query.name || req.query.q || '';
+  const normalized = normalizeQuery(queryValue);
+
+  if (!normalized) {
+    return res.status(400).json({ error: 'missingQuery' });
+  }
+
+  try {
+    await ensurePoliticianTablesPromise;
+    const cached = await politicianRepo.getByQueryKey(normalized);
+
+    try {
+      const fresh = await fetchExternalPolitician(queryValue);
+      if (fresh) {
+        const persisted = await politicianRepo.upsert(normalized, fresh);
+        return res.json({
+          source: 'api',
+          politician: formatPoliticianResponse(persisted.record, persisted.trades),
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load politician data from API:', error);
+      if (error.message === 'apiUnauthorized') {
+        return res.status(502).json({ error: 'apiUnauthorized' });
+      }
+      if (error.message === 'apiFetchFailed' && !cached) {
+        return res.status(502).json({ error: 'apiUnavailable' });
+      }
+    }
+
+    if (cached) {
+      return res.json({
+        source: 'cache',
+        politician: formatPoliticianResponse(cached.record, cached.trades),
+      });
+    }
+
+    return res.status(404).json({ error: 'notFound' });
+  } catch (error) {
+    console.error('Failed to load politician data:', error);
+    return res.status(500).json({ error: 'server' });
+  }
 });
 
 app.get('/logout', (req, res) => {
