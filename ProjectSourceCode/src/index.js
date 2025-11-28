@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const pgp = require('pg-promise')();
 const { fetchExternalPolitician, normalizeQuery } = require('./services/politicians');
+const axios = require('axios');
 
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
@@ -428,6 +429,24 @@ const wantsJson = (req) =>
   req.accepts(['html', 'json']) === 'json' || req.is('application/json');
 
 const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || 'connect.sid';
+const QUIVER_API_KEY = process.env.QUIVER_API_KEY;
+
+const fetchQuiverData = async (endpoint) => {
+  if (!QUIVER_API_KEY) {
+    throw new Error('missingQuiverKey');
+  }
+
+  const url = `https://api.quiverquant.com/beta/live/${endpoint}`;
+  const response = await axios.get(url, {
+    headers: {
+      Authorization: `Token ${QUIVER_API_KEY}`,
+      Accept: 'application/json',
+    },
+    timeout: 8000,
+  });
+
+  return Array.isArray(response.data) ? response.data : [];
+};
 
 // Serve static assets
 app.use('/static', express.static(path.join(__dirname, '../static')));
@@ -438,6 +457,54 @@ app.get('/api/session', (req, res) => {
     return res.status(401).json({ error: 'unauthenticated' });
   }
   return res.json({ user: req.session.user });
+});
+
+app.get('/api/stocks/movers', requireAuth, async (req, res) => {
+  if (!QUIVER_API_KEY) {
+    return res.status(501).json({ error: 'quiverKeyMissing' });
+  }
+
+  try {
+    const [senateData, houseData] = await Promise.all([
+      fetchQuiverData('senatetrading'),
+      fetchQuiverData('housetrading'),
+    ]);
+
+    const normalizeRecord = (record) => {
+      const person = record.Senator || record.Representative || 'Unknown Member';
+      const role = record.Senator ? 'Sen.' : 'Rep.';
+      const isPurchase = /purchase/i.test(record.Transaction || '');
+      const dateLabel = record.Date ? new Date(record.Date) : null;
+      const formattedDate = dateLabel
+        ? dateLabel.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : 'Recent';
+
+      return {
+        ticker: record.Ticker,
+        person,
+        role,
+        chamber: record.Senator ? 'US Senate' : 'US House',
+        transaction: record.Transaction,
+        range: record.Range,
+        date: record.Date,
+        formattedDate,
+        sentiment: isPurchase ? 'positive' : 'negative',
+        summary: `${role} ${person} reported a ${record.Transaction?.toLowerCase() || 'transaction'} in ${record.Ticker} on ${formattedDate}.`,
+      };
+    };
+
+    const combined = [...senateData, ...houseData]
+      .filter((entry) => entry?.Ticker)
+      .sort((a, b) => new Date(b.Date) - new Date(a.Date))
+      .slice(0, 8)
+      .map(normalizeRecord);
+
+    return res.json({ items: combined });
+  } catch (error) {
+    console.error('Failed to fetch Quiver data:', error?.message || error);
+    const status = error.message === 'missingQuiverKey' ? 501 : 502;
+    return res.status(status).json({ error: 'quiverUnavailable' });
+  }
 });
 
 app.post('/api/logout', (req, res) => {
@@ -458,15 +525,15 @@ app.post('/api/logout', (req, res) => {
 
 // Routes for HTML pages
 app.get('/', (req, res) => {
-  if (!req.session.user) {
-    return res.redirect('/login');
+  if (req.session.user) {
+    return res.redirect('/dashboard');
   }
   return res.sendFile(path.join(__dirname, '../templates/homepage.html'));
 });
 
 app.get('/register', (req, res) => {
   if (req.session.user) {
-    return res.redirect('/');
+    return res.redirect('/dashboard');
   }
   return res.sendFile(path.join(__dirname, '../templates/register.html'));
 });
@@ -524,7 +591,7 @@ app.post('/register', async (req, res) => {
 
 app.get('/login', (req, res) => {
   if (req.session.user) {
-    return res.redirect('/');
+    return res.redirect('/dashboard');
   }
   return res.sendFile(path.join(__dirname, '../templates/login.html'));
 });
@@ -565,7 +632,7 @@ app.post('/login', async (req, res) => {
     if (wantsJson(req)) {
       return res.status(200).json({ message: 'authenticated' });
     }
-    return res.redirect('/');
+    return res.redirect('/dashboard');
   } catch (error) {
     console.error('Login failed:', error);
     if (wantsJson(req)) {
@@ -577,6 +644,10 @@ app.post('/login', async (req, res) => {
 
 app.get('/homepage', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, '../templates/homepage.html'));
+});
+
+app.get('/dashboard', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, '../templates/dashboard.html'));
 });
 
 app.get('/politician', requireAuth, (req, res) => {
