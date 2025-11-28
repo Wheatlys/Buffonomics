@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>Buffonomics · Dashboard</title>
+
+  <link rel="stylesheet" href="/static/css/dashboard.css" />
+</head>
+<body>
+  <div id="threadsBackground" class="threads-bg" aria-hidden="true"
+       data-amplitude="2" data-distance="0.9" data-interactive="false"></div>
+  <div class="noise" aria-hidden="true"></div>
+
+  <header class="shell-header">
+    <div class="brand">
+      <span class="brand__text">Buffonomics</span>
+      <span class="brand__caret">▌</span>
+    </div>
+
+    <nav class="shell-nav" aria-label="Primary">
+      <button class="nav-link is-active" type="button">Overview</button>
+      <button class="nav-link" type="button">Watchlists</button>
+      <button class="nav-link" type="button">Trade Log</button>
+      <button class="nav-link" type="button">Settings</button>
+    </nav>
+
+    <div class="shell-meta">
+      <div class="meta-line">
+        <span class="dot" aria-hidden="true"></span>
+        <span>Session Active</span>
+      </div>
+      <button id="dashboardLogout" class="ghost-btn" type="button">Logout</button>
+    </div>
+  </header>
+
+  <main class="workspace" role="main">
+    <aside class="workspace__sidebar">
+      <section class="panel stocks-card">
+        <header class="stocks-header">
+          <div>
+            <p class="eyebrow">Stocks</p>
+            <h2>Today's Movers</h2>
+          </div>
+          <span class="stocks-pill">Live</span>
+        </header>
+
+        <nav class="stocks-tabs" aria-label="Stocks filters">
+          <button class="stocks-tab" type="button" disabled>Watchlist</button>
+          <button class="stocks-tab" type="button" disabled>Portfolio</button>
+          <button class="stocks-tab is-active" type="button" data-stock-tab>Today's Movers</button>
+          <button class="stocks-tab" type="button" disabled>Market</button>
+          <button class="stocks-tab" type="button" disabled>Trending on Quiver</button>
+        </nav>
+
+        <div class="stocks-status" role="status">Fetching congressional trade data…</div>
+        <ul class="stocks-list" aria-live="polite"></ul>
+      </section>
+    </aside>
+
+    <section class="workspace__content">
+      <section class="panel panel--highlight">
+        <header class="panel__header">
+          <div>
+            <p class="eyebrow">Portfolio Snapshot</p>
+            <h2 class="panel__title">No data yet</h2>
+          </div>
+          <button class="ghost-btn" type="button">Import Data</button>
+        </header>
+        <p class="muted">Connect your preferred data source to see performance, open positions, and alerts.</p>
+      </section>
+
+      <section class="panel grid" aria-label="Placeholder widgets">
+        <article class="card">
+          <h3>Signals</h3>
+          <p class="muted">Preview the signals you track most often. Add tiles as your workflow grows.</p>
+        </article>
+        <article class="card">
+          <h3>Legislation</h3>
+          <p class="muted">Keep an eye on bills and hearings that might move the market.</p>
+        </article>
+        <article class="card">
+          <h3>Notes</h3>
+          <p class="muted">Drop quick notes, TODOs, and references for upcoming sessions.</p>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="/scripts/dashboard-bg.js"></script>
+  <script src="/scripts/dashboard.js" defer></script>
+</body>
+</html>
