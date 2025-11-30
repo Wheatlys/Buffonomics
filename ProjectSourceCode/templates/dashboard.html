@@ -21,15 +21,21 @@
 
     <nav class="shell-nav" aria-label="Primary">
       <button class="nav-link is-active" type="button">Overview</button>
-      <button class="nav-link" type="button">Watchlists</button>
-      <button class="nav-link" type="button">Trade Log</button>
-      <button class="nav-link" type="button">Settings</button>
     </nav>
 
     <div class="shell-meta">
-      <div class="meta-line">
-        <span class="dot" aria-hidden="true"></span>
-        <span>Session Active</span>
+      <div class="search-container">
+        <form id="memberSearch" class="shell-search" role="search" aria-label="Search congress members">
+          <label class="sr-only" for="memberSearchInput">Search congress members</label>
+          <input id="memberSearchInput" name="query" type="search" placeholder="Search congress members" autocomplete="off" />
+          <button class="ghost-btn" type="submit">Search</button>
+        </form>
+        <div class="search-dropdown" data-search-dropdown>
+          <div class="search-dropdown__body">
+            <p class="search-status" data-search-status role="status" aria-live="polite">Start typing a name…</p>
+            <ul class="search-results" data-search-results></ul>
+          </div>
+        </div>
       </div>
       <button id="dashboardLogout" class="ghost-btn" type="button">Logout</button>
     </div>
@@ -46,44 +52,23 @@
           <span class="stocks-pill">Live</span>
         </header>
 
-        <nav class="stocks-tabs" aria-label="Stocks filters">
-          <button class="stocks-tab" type="button" disabled>Watchlist</button>
-          <button class="stocks-tab" type="button" disabled>Portfolio</button>
-          <button class="stocks-tab is-active" type="button" data-stock-tab>Today's Movers</button>
-          <button class="stocks-tab" type="button" disabled>Market</button>
-          <button class="stocks-tab" type="button" disabled>Trending on Quiver</button>
-        </nav>
-
         <div class="stocks-status" role="status">Fetching congressional trade data…</div>
         <ul class="stocks-list" aria-live="polite"></ul>
       </section>
     </aside>
 
     <section class="workspace__content">
-      <section class="panel panel--highlight">
+      <section class="panel politicians-panel" aria-label="Congressional trading highlights">
         <header class="panel__header">
           <div>
-            <p class="eyebrow">Portfolio Snapshot</p>
-            <h2 class="panel__title">No data yet</h2>
+            <p class="eyebrow">Congressional Trades</p>
+            <h2 class="panel__title">Politician Spotlights</h2>
           </div>
-          <button class="ghost-btn" type="button">Import Data</button>
+          <button class="ghost-btn" type="button" data-politicians-refresh>Refresh</button>
         </header>
-        <p class="muted">Connect your preferred data source to see performance, open positions, and alerts.</p>
-      </section>
-
-      <section class="panel grid" aria-label="Placeholder widgets">
-        <article class="card">
-          <h3>Signals</h3>
-          <p class="muted">Preview the signals you track most often. Add tiles as your workflow grows.</p>
-        </article>
-        <article class="card">
-          <h3>Legislation</h3>
-          <p class="muted">Keep an eye on bills and hearings that might move the market.</p>
-        </article>
-        <article class="card">
-          <h3>Notes</h3>
-          <p class="muted">Drop quick notes, TODOs, and references for upcoming sessions.</p>
-        </article>
+        <p class="muted">Recent trading activity pulled live from QuiverQuant. Click a card to view the full profile.</p>
+        <p class="politician-status" data-politicians-status role="status">Fetching latest highlights…</p>
+        <div class="politician-grid" data-politicians-grid aria-live="polite"></div>
       </section>
     </section>
   </main>

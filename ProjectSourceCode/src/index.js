@@ -430,6 +430,18 @@ const wantsJson = (req) =>
 
 const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || 'connect.sid';
 const QUIVER_API_KEY = process.env.QUIVER_API_KEY;
+const ALPHAVANTAGE_API_KEY = process.env.ALPHAVANTAGE_API_KEY;
+
+const parseAmountRange = (value = '') => {
+  if (!value) return null;
+  const clean = value.replace(/\$|,/g, '');
+  const [min, max] = clean.split('-').map((part) => Number(part.trim()));
+  if (Number.isFinite(min) && Number.isFinite(max)) {
+    return (min + max) / 2;
+  }
+  if (Number.isFinite(min)) return min;
+  return null;
+};
 
 const fetchQuiverData = async (endpoint) => {
   if (!QUIVER_API_KEY) {
@@ -448,6 +460,22 @@ const fetchQuiverData = async (endpoint) => {
   return Array.isArray(response.data) ? response.data : [];
 };
 
+const fetchAlphaMovers = async () => {
+  if (!ALPHAVANTAGE_API_KEY) {
+    throw new Error('missingAlphaKey');
+  }
+
+  const response = await axios.get('https://www.alphavantage.co/query', {
+    params: {
+      function: 'TOP_GAINERS_LOSERS',
+      apikey: ALPHAVANTAGE_API_KEY,
+    },
+    timeout: 8000,
+  });
+
+  return response.data || {};
+};
+
 // Serve static assets
 app.use('/static', express.static(path.join(__dirname, '../static')));
 app.use('/scripts', express.static(path.join(__dirname, '../scripts')));
@@ -460,6 +488,57 @@ app.get('/api/session', (req, res) => {
 });
 
 app.get('/api/stocks/movers', requireAuth, async (req, res) => {
+  if (!ALPHAVANTAGE_API_KEY) {
+    return res.status(501).json({ error: 'alphaKeyMissing' });
+  }
+
+  try {
+    const payload = await fetchAlphaMovers();
+    const now = new Date();
+    const formatChange = (value) => {
+      if (typeof value === 'number') return value;
+      if (typeof value === 'string') {
+        const clean = value.replace('%', '').trim();
+        const num = Number(clean);
+        return Number.isFinite(num) ? num : null;
+      }
+      return null;
+    };
+
+    const mapEntry = (entry = {}, sentiment = 'positive') => {
+      const pct = formatChange(entry.change_percentage);
+      const amount = formatChange(entry.change_amount);
+      const price = Number(entry.price);
+      const label = sentiment === 'positive' ? 'Top Gainer' : 'Top Loser';
+      const direction = sentiment === 'positive' ? 'up' : 'down';
+      const changeLabel = pct !== null ? `${pct.toFixed(2)}%` : `${direction}`;
+      return {
+        ticker: entry.ticker,
+        sentiment,
+        role: label,
+        person: entry.ticker,
+        range: price && Number.isFinite(price) ? `$${price.toFixed(2)}` : '—',
+        formattedDate: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        summary: `${entry.ticker} is ${direction} ${changeLabel} today.`,
+        changePct: pct,
+        changeAmount: amount,
+        price: Number.isFinite(price) ? price : null,
+      };
+    };
+
+    const gainers = Array.isArray(payload.top_gainers) ? payload.top_gainers.slice(0, 4).map((item) => mapEntry(item, 'positive')) : [];
+    const losers = Array.isArray(payload.top_losers) ? payload.top_losers.slice(0, 4).map((item) => mapEntry(item, 'negative')) : [];
+    const items = [...gainers, ...losers];
+
+    return res.json({ items });
+  } catch (error) {
+    console.error('Failed to fetch AlphaVantage movers:', error?.message || error);
+    const status = error.message === 'missingAlphaKey' ? 501 : 502;
+    return res.status(status).json({ error: 'alphaUnavailable' });
+  }
+});
+
+app.get('/api/politicians/highlights', requireAuth, async (req, res) => {
   if (!QUIVER_API_KEY) {
     return res.status(501).json({ error: 'quiverKeyMissing' });
   }
@@ -470,38 +549,163 @@ app.get('/api/stocks/movers', requireAuth, async (req, res) => {
       fetchQuiverData('housetrading'),
     ]);
 
-    const normalizeRecord = (record) => {
-      const person = record.Senator || record.Representative || 'Unknown Member';
+    const group = new Map();
+    const allRecords = [...senateData, ...houseData].filter(
+      (entry) => entry && (entry.Senator || entry.Representative),
+    );
+
+    allRecords.forEach((record) => {
+      const name = record.Senator || record.Representative || 'Unknown Member';
       const role = record.Senator ? 'Sen.' : 'Rep.';
-      const isPurchase = /purchase/i.test(record.Transaction || '');
-      const dateLabel = record.Date ? new Date(record.Date) : null;
-      const formattedDate = dateLabel
-        ? dateLabel.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        : 'Recent';
+      const chamber = record.Senator ? 'US Senate' : 'US House';
+      const rawDate = record.Date || record.TransactionDate || record.TradeDate || null;
+      const parsedDate = rawDate ? new Date(rawDate) : null;
+      const dateMs = parsedDate && !Number.isNaN(parsedDate.getTime())
+        ? parsedDate.getTime()
+        : null;
 
-      return {
-        ticker: record.Ticker,
-        person,
+      const amountRange = record.Range || record.AmountRange || null;
+      const parsedAmount = (() => {
+        const numericAmount = record.Amount ?? record.amount;
+        if (numericAmount !== undefined && numericAmount !== null) {
+          const num = Number(numericAmount);
+          if (Number.isFinite(num)) return num;
+        }
+        return parseAmountRange(amountRange || '');
+      })();
+
+      const existing = group.get(name) || {
+        name,
         role,
-        chamber: record.Senator ? 'US Senate' : 'US House',
-        transaction: record.Transaction,
-        range: record.Range,
-        date: record.Date,
-        formattedDate,
-        sentiment: isPurchase ? 'positive' : 'negative',
-        summary: `${role} ${person} reported a ${record.Transaction?.toLowerCase() || 'transaction'} in ${record.Ticker} on ${formattedDate}.`,
+        chamber,
+        party: record.Party || record.party || record.PoliticalParty || null,
+        trades: [],
       };
-    };
 
-    const combined = [...senateData, ...houseData]
-      .filter((entry) => entry?.Ticker)
-      .sort((a, b) => new Date(b.Date) - new Date(a.Date))
-      .slice(0, 8)
-      .map(normalizeRecord);
+      existing.trades.push({
+        ticker: record.Ticker || null,
+        transaction: record.Transaction || null,
+        amountRange,
+        amountValue: parsedAmount,
+        rawDate,
+        dateMs,
+      });
 
-    return res.json({ items: combined });
+      group.set(name, existing);
+    });
+
+    const highlights = Array.from(group.values())
+      .map((entry) => {
+        if (!entry.trades.length) return null;
+        const trades = [...entry.trades].sort((a, b) => (b.dateMs || 0) - (a.dateMs || 0));
+        const latest = trades[0];
+        const tickerSet = new Set(trades.map((trade) => trade.ticker).filter(Boolean));
+        const dateLabel = latest.dateMs
+          ? new Date(latest.dateMs).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          })
+          : 'Recent';
+        const sentiment = /sale|sell|dispose/i.test(latest.transaction || '')
+          ? 'negative'
+          : 'positive';
+
+        return {
+          name: entry.name,
+          role: entry.role,
+          chamber: entry.chamber,
+          party: entry.party || 'Unknown',
+          lastActivity: latest.dateMs
+            ? new Date(latest.dateMs).toISOString()
+            : (latest.rawDate || null),
+          formattedDate: dateLabel,
+          latestTransaction: latest.transaction,
+          latestTicker: latest.ticker,
+          amountRange: latest.amountRange,
+          amountValue: latest.amountValue,
+          totalTrades: trades.length,
+          topTickers: Array.from(tickerSet).slice(0, 3),
+          sentiment,
+          summary: `${entry.role} ${entry.name} reported a ${latest.transaction?.toLowerCase() || 'trade'} in ${latest.ticker || 'a security'} on ${dateLabel}.`,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.lastActivity || 0) - new Date(a.lastActivity || 0))
+      .slice(0, 12);
+
+    return res.json({ items: highlights });
   } catch (error) {
-    console.error('Failed to fetch Quiver data:', error?.message || error);
+    console.error('Failed to fetch politician highlights:', error?.message || error);
+    const status = error.message === 'missingQuiverKey' ? 501 : 502;
+    return res.status(status).json({ error: 'quiverUnavailable' });
+  }
+});
+
+app.get('/api/politicians/search', requireAuth, async (req, res) => {
+  if (!QUIVER_API_KEY) {
+    return res.status(501).json({ error: 'quiverKeyMissing' });
+  }
+
+  const rawQuery = (req.query.q || '').trim();
+  if (rawQuery.length < 2) {
+    return res.status(400).json({ error: 'missingQuery' });
+  }
+
+  const tokens = rawQuery
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const matchesTokens = (name = '') => {
+    const lower = name.toLowerCase();
+    return tokens.every((token) => lower.includes(token));
+  };
+
+  try {
+    const [senateData, houseData] = await Promise.all([
+      fetchQuiverData('senatetrading'),
+      fetchQuiverData('housetrading'),
+    ]);
+
+    const grouped = new Map();
+    [...senateData, ...houseData].forEach((record) => {
+      const name = record?.Senator || record?.Representative;
+      if (!name || !matchesTokens(name)) return;
+
+      const chamber = record.Senator ? 'Senate' : 'House';
+      const party = record.Party || record.party || null;
+      const rawDate = record.Date || record.TransactionDate || record.TradeDate || null;
+      const parsedDate = rawDate ? new Date(rawDate) : null;
+      const dateMs = parsedDate && !Number.isNaN(parsedDate.getTime())
+        ? parsedDate.getTime()
+        : 0;
+
+      const existing = grouped.get(name) || {
+        name,
+        party,
+        chamber,
+        active: true,
+        avatarUrl: null,
+        lastActivity: null,
+        latestTicker: record.Ticker || null,
+      };
+
+      if (!existing.lastActivity || dateMs > new Date(existing.lastActivity).getTime()) {
+        existing.lastActivity = rawDate || null;
+        existing.latestTicker = record.Ticker || existing.latestTicker || null;
+      }
+
+      grouped.set(name, existing);
+    });
+
+    const items = Array.from(grouped.values())
+      .sort((a, b) => new Date(b.lastActivity || 0) - new Date(a.lastActivity || 0))
+      .slice(0, 12);
+
+    return res.json({ items });
+  } catch (error) {
+    console.error('Failed to search politicians:', error?.message || error);
     const status = error.message === 'missingQuiverKey' ? 501 : 502;
     return res.status(status).json({ error: 'quiverUnavailable' });
   }
