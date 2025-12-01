@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchStatus = document.querySelector('[data-search-status]');
   const searchDropdown = document.querySelector('[data-search-dropdown]');
   const searchResults = document.querySelector('[data-search-results]');
+  const normalizeKey = (value = '') => value.trim().toLowerCase();
+  let followedKeys = new Set();
 
   const currencyFormatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -200,6 +202,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  const updateFollowButton = (btn, name) => {
+    const key = normalizeKey(name);
+    const isFollowing = followedKeys.has(key);
+    btn.textContent = isFollowing ? 'Following' : 'Follow';
+    btn.classList.toggle('btn--following', isFollowing);
+    btn.setAttribute('aria-pressed', isFollowing ? 'true' : 'false');
+  };
+
+  const toggleFollow = async (name, button) => {
+    if (!name) return;
+    const key = normalizeKey(name);
+    const isFollowing = followedKeys.has(key);
+    button.disabled = true;
+    button.dataset.loading = 'true';
+    try {
+      if (isFollowing) {
+        const params = new URLSearchParams({ politician: name });
+        const res = await fetch(`/api/follows?${params.toString()}`, { method: 'DELETE' });
+        if (!res.ok && res.status !== 204) throw new Error('unfollowFailed');
+        followedKeys.delete(key);
+      } else {
+        const res = await fetch('/api/follows', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ politician: name }),
+        });
+        if (!res.ok) throw new Error('followFailed');
+        followedKeys.add(key);
+      }
+      updateFollowButton(button, name);
+      await fetchFollows();
+    } catch (error) {
+      console.error('Follow toggle failed:', error);
+      alert('Unable to update following right now.');
+    } finally {
+      button.disabled = false;
+      delete button.dataset.loading;
+    }
+  };
+
   const renderPoliticians = (items = []) => {
     if (!politicianGrid || !politicianStatus) return;
 
@@ -212,10 +254,19 @@ document.addEventListener('DOMContentLoaded', () => {
     politicianStatus.textContent = '';
     items.forEach((item) => {
       const roleLabel = [item.role, item.chamber].filter(Boolean).join(' · ') || 'Member';
-      const card = document.createElement('a');
+      const card = document.createElement('article');
       card.className = 'politician-card';
-      card.href = `/politician?politician=${encodeURIComponent(item.name)}`;
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('role', 'button');
       card.setAttribute('aria-label', `View profile for ${item.name}`);
+      card.addEventListener('click', () => {
+        window.location.href = `/politician?politician=${encodeURIComponent(item.name)}`;
+      });
+      card.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          window.location.href = `/politician?politician=${encodeURIComponent(item.name)}`;
+        }
+      });
 
       const roleLine = document.createElement('div');
       roleLine.className = 'politician-card__role';
@@ -273,7 +324,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const amount = document.createElement('span');
       amount.textContent = `${item.latestTicker || '—'} • ${amountLabel}`;
 
-      footer.append(date, amount);
+      const followBtn = document.createElement('button');
+      followBtn.type = 'button';
+      followBtn.className = 'ghost-btn';
+      updateFollowButton(followBtn, item.name);
+      followBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        toggleFollow(item.name, followBtn);
+      });
+
+      footer.append(date, amount, followBtn);
 
       card.append(roleLine, name, summary, tags, footer);
       politicianGrid.appendChild(card);
@@ -304,14 +364,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   politicianRefresh?.addEventListener('click', () => fetchPoliticians());
 
-  const renderStocks = (items = []) => {
+  const renderFollows = (items = []) => {
     if (!stocksList || !stocksStatus) {
       return;
     }
 
     stocksList.innerHTML = '';
     if (!items.length) {
-      stocksStatus.textContent = 'No market movers available.';
+      stocksStatus.textContent = 'You are not following any politicians yet.';
       return;
     }
 
@@ -322,53 +382,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const ticker = document.createElement('div');
       ticker.className = 'stock-row__ticker';
-      ticker.textContent = item.ticker || '—';
+      ticker.textContent = item.name || item.queryKey || '—';
 
       const change = document.createElement('div');
-      change.className = `stock-row__change ${item.sentiment === 'negative' ? 'is-negative' : 'is-positive'}`;
-      const pctLabel = Number.isFinite(item.changePct)
-        ? `${item.changePct > 0 ? '+' : ''}${item.changePct.toFixed(2)}%`
-        : null;
-      const amtLabel = Number.isFinite(item.changeAmount)
-        ? `${item.changeAmount > 0 ? '+' : ''}$${item.changeAmount.toFixed(2)}`
-        : null;
-      change.textContent = pctLabel || amtLabel || (item.sentiment === 'negative' ? 'Down' : 'Up');
+      change.className = 'stock-row__change';
+      const sentimentLower = (item.latestTransaction || '').toLowerCase();
+      const isSell = sentimentLower.includes('sale') || sentimentLower.includes('sell');
+      change.classList.add(isSell ? 'is-negative' : 'is-positive');
+      change.textContent = item.latestTicker || (isSell ? 'Sale' : 'Purchase');
 
       const summary = document.createElement('p');
       summary.className = 'stock-row__summary';
-      summary.textContent = item.summary;
+      summary.textContent = item.role || 'Recent trading activity';
 
       const meta = document.createElement('div');
       meta.className = 'stock-row__meta';
-      const priceLabel = item.price && Number.isFinite(item.price)
-        ? `$${item.price.toFixed(2)}`
-        : item.range || 'Price N/A';
-      meta.innerHTML = `<span>${item.role || ''}</span><span>${item.formattedDate} • ${priceLabel}</span>`;
+      const dateLabel = item.lastTraded ? formatDate(item.lastTraded) : 'Recent';
+      meta.innerHTML = `<span>${item.party || ''}</span><span>${dateLabel} • ${item.latestTicker || ''}</span>`;
 
       li.append(ticker, change, summary, meta);
       stocksList.appendChild(li);
     });
   };
 
-  const fetchStocks = async () => {
+  const fetchFollows = async () => {
     if (!stocksStatus || !stocksList) {
       return;
     }
 
-    stocksStatus.textContent = 'Fetching daily market movers…';
+    stocksStatus.textContent = 'Loading who you follow…';
     try {
-      const response = await fetch('/api/stocks/movers');
+      const response = await fetch('/api/follows', { headers: { Accept: 'application/json' } });
       if (!response.ok) {
         throw new Error('Bad response');
       }
       const payload = await response.json();
-      renderStocks(payload.items || []);
+      const keys = (payload.items || []).map((item) => normalizeKey(item.queryKey || item.name));
+      followedKeys = new Set(keys);
+      renderFollows(payload.items || []);
     } catch (error) {
-      console.error('Unable to load stocks:', error);
-      stocksStatus.textContent = 'Unable to load market data right now.';
+      console.error('Unable to load following list:', error);
+      stocksStatus.textContent = 'Unable to load following list right now.';
     }
   };
 
-  fetchStocks();
-  fetchPoliticians();
+  const bootstrap = async () => {
+    await fetchFollows();
+    await fetchPoliticians();
+  };
+
+  bootstrap();
 });

@@ -7,6 +7,8 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
 });
 
 const numberFormatter = new Intl.NumberFormat('en-US');
+const normalizeKey = (value = '') => value.trim().toLowerCase();
+let followedKeys = new Set();
 
 const HERO_DEFAULT_TITLE = 'No data yet';
 const HERO_DEFAULT_SUB =
@@ -89,6 +91,7 @@ const clearProfile = () => {
   if (elements.followBtn) {
     elements.followBtn.classList.remove('profile__follow--active');
     elements.followBtn.textContent = 'Follow Trading Activity';
+    elements.followBtn.setAttribute('aria-pressed', 'false');
   }
 };
 
@@ -166,6 +169,13 @@ const renderProfile = (profile) => {
   showStatus(`${profile.name}`, `${profile.position || ''} • ${profile.party || ''}`.trim());
   document.title = `Buffonomics · ${profile.name}`;
   renderTrades(profile.trades);
+  if (elements.followBtn) {
+    const isFollowing = followedKeys.has(normalizeKey(profile.name || ''));
+    elements.followBtn.classList.toggle('profile__follow--active', isFollowing);
+    elements.followBtn.textContent = isFollowing ? 'Following' : 'Follow Trading Activity';
+    elements.followBtn.setAttribute('aria-pressed', isFollowing ? 'true' : 'false');
+    elements.followBtn.dataset.targetName = profile.name || '';
+  }
 };
 
 const renderRawPayload = (payload) => {
@@ -225,7 +235,57 @@ const loadPolitician = async (query) => {
   }
 };
 
+const fetchFollows = async () => {
+  try {
+    const res = await fetch('/api/follows', { headers: { Accept: 'application/json' } });
+    if (!res.ok) return;
+    const payload = await res.json();
+    const keys = (payload.items || []).map((item) => normalizeKey(item.queryKey || item.name));
+    followedKeys = new Set(keys);
+  } catch (error) {
+    console.error('Failed to load follows list', error);
+  }
+};
+
+const toggleFollow = async () => {
+  if (!elements.followBtn) return;
+  const name = elements.followBtn.dataset.targetName || elements.name?.textContent || '';
+  if (!name) return;
+  const key = normalizeKey(name);
+  const isFollowing = followedKeys.has(key);
+  elements.followBtn.disabled = true;
+  elements.followBtn.classList.add('btn--loading');
+  try {
+    if (isFollowing) {
+      const params = new URLSearchParams({ politician: name });
+      const res = await fetch(`/api/follows?${params.toString()}`, { method: 'DELETE' });
+      if (!res.ok && res.status !== 204) throw new Error('unfollowFailed');
+      followedKeys.delete(key);
+    } else {
+      const res = await fetch('/api/follows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ politician: name }),
+      });
+      if (!res.ok) throw new Error('followFailed');
+      followedKeys.add(key);
+    }
+    const active = !isFollowing;
+    elements.followBtn.classList.toggle('profile__follow--active', active);
+    elements.followBtn.textContent = active ? 'Following' : 'Follow Trading Activity';
+    elements.followBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  } catch (error) {
+    console.error('Follow toggle failed', error);
+    alert('Unable to update follow right now.');
+  } finally {
+    elements.followBtn.disabled = false;
+    elements.followBtn.classList.remove('btn--loading');
+  }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
+  fetchFollows();
+
   if (elements.form) {
     elements.form.addEventListener('submit', (event) => {
       event.preventDefault();
@@ -234,10 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (elements.followBtn) {
-    elements.followBtn.addEventListener('click', () => {
-      const isFollowing = elements.followBtn.classList.toggle('profile__follow--active');
-      elements.followBtn.textContent = isFollowing ? 'Following' : 'Follow Trading Activity';
-    });
+    elements.followBtn.addEventListener('click', toggleFollow);
   }
 
   const params = new URLSearchParams(window.location.search);
