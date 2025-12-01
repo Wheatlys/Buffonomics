@@ -449,6 +449,7 @@ const fetchQuiverData = async (endpoint) => {
   }
 
   const url = `https://api.quiverquant.com/beta/live/${endpoint}`;
+  console.log('[Quiver] GET', url);
   const response = await axios.get(url, {
     headers: {
       Authorization: `Token ${QUIVER_API_KEY}`,
@@ -456,6 +457,7 @@ const fetchQuiverData = async (endpoint) => {
     },
     timeout: 8000,
   });
+  console.log('[Quiver] Response', endpoint, response.status);
 
   return Array.isArray(response.data) ? response.data : [];
 };
@@ -465,6 +467,7 @@ const fetchAlphaMovers = async () => {
     throw new Error('missingAlphaKey');
   }
 
+  console.log('[AlphaVantage] Fetching top gainers/losers');
   const response = await axios.get('https://www.alphavantage.co/query', {
     params: {
       function: 'TOP_GAINERS_LOSERS',
@@ -472,6 +475,7 @@ const fetchAlphaMovers = async () => {
     },
     timeout: 8000,
   });
+  console.log('[AlphaVantage] Response', response.status);
 
   return response.data || {};
 };
@@ -494,6 +498,7 @@ app.get('/api/stocks/movers', requireAuth, async (req, res) => {
 
   try {
     const payload = await fetchAlphaMovers();
+    console.log('[API] /api/stocks/movers alpha response keys', Object.keys(payload || {}));
     const now = new Date();
     const formatChange = (value) => {
       if (typeof value === 'number') return value;

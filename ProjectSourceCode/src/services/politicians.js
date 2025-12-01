@@ -236,12 +236,14 @@ const fetchDataset = async (path, apiKey, query) => {
         params.page_size = pageSize;
       }
 
+      console.log('[Quiver] Request', path, params);
       const response = await quiverClient.get(path, {
         headers: {
           Authorization: `Token ${apiKey}`,
         },
         params,
       });
+      console.log('[Quiver] Response', path, response.status, Array.isArray(response.data) ? response.data.length : response.data?.data?.length);
 
       const data = Array.isArray(response.data)
         ? response.data
@@ -339,14 +341,14 @@ const fetchQuiverPolitician = async (query) => {
     .filter(Boolean);
   const fallbackPaths = [
     '/beta/bulk/congresstrading',
-    // '/beta/alltransactions',
-    // '/beta/congresstrading',
-    // '/beta/housetrading',
-    // '/beta/senatetrading',
-    // '/beta/live/housetrading',
-    // '/beta/live/senatetrading',
-    // '/beta/lawmakers/trades',
-    // '/beta/live/lawmakers/trades',
+    '/beta/congresstrading',
+    '/beta/alltransactions',
+    '/beta/housetrading',
+    '/beta/senatetrading',
+    '/beta/live/housetrading',
+    '/beta/live/senatetrading',
+    '/beta/lawmakers/trades',
+    '/beta/live/lawmakers/trades',
     ...extraPaths,
   ];
 
