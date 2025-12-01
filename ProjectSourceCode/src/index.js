@@ -732,7 +732,7 @@ app.get('/', (req, res) => {
   if (req.session.user) {
     return res.redirect('/dashboard');
   }
-  return res.sendFile(path.join(__dirname, '../templates/homepage.html'));
+  return res.redirect('/login');
 });
 
 app.get('/register', (req, res) => {

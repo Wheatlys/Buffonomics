@@ -212,9 +212,6 @@ document.addEventListener('DOMContentLoaded', () => {
     politicianStatus.textContent = '';
     items.forEach((item) => {
       const roleLabel = [item.role, item.chamber].filter(Boolean).join(' · ') || 'Member';
-      const sentimentClass = item.sentiment === 'negative'
-        ? 'pill--sentiment-negative'
-        : 'pill--sentiment-positive';
       const card = document.createElement('a');
       card.className = 'politician-card';
       card.href = `/politician?politician=${encodeURIComponent(item.name)}`;
@@ -223,7 +220,21 @@ document.addEventListener('DOMContentLoaded', () => {
       const roleLine = document.createElement('div');
       roleLine.className = 'politician-card__role';
       const sentimentLabel = item.latestTransaction || 'Trade';
-      roleLine.textContent = [roleLabel, sentimentLabel].filter(Boolean).join(' • ');
+      const sentimentLower = sentimentLabel.toLowerCase();
+      const sentimentClass = sentimentLower.includes('sale')
+        ? 'label--sell'
+        : sentimentLower.includes('partial')
+          ? 'label--partial'
+          : 'label--buy';
+
+      const roleText = document.createElement('span');
+      roleText.textContent = roleLabel;
+
+      const sentimentChip = document.createElement('span');
+      sentimentChip.className = `label ${sentimentClass}`;
+      sentimentChip.textContent = sentimentLabel;
+
+      roleLine.append(roleText, sentimentChip);
 
       const name = document.createElement('h3');
       name.className = 'politician-card__name';

@@ -29,8 +29,7 @@ body {
   margin: 0;
   font-family: 'SFMono-Regular', ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   color: var(--text);
-  background: radial-gradient(circle at top, rgba(255, 208, 64, 0.08), transparent 40%),
-              linear-gradient(160deg, #050506, #050608 40%, #050607 65%, #07090c);
+  background: linear-gradient(180deg, #040506 0%, #040607 40%, #05070b 100%);
   min-height: 100%;
   overflow-x: hidden;
 }
@@ -169,8 +168,8 @@ body {
 
 .panel {
   border-radius: var(--radius);
-  background: var(--panel);
-  border: 1px solid var(--border);
+  background: rgba(11, 12, 15, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   padding: 24px;
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
 }
@@ -216,15 +215,17 @@ body {
   position: relative;
   overflow: hidden;
   isolation: isolate;
+  background: rgba(11, 12, 15, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.45);
 }
 
 .politicians-panel::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 20% 20%, rgba(255, 208, 64, 0.12), transparent 32%),
-              radial-gradient(circle at 80% 0%, rgba(255, 208, 64, 0.08), transparent 26%);
-  opacity: 0.7;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0.01));
+  opacity: 0.9;
   pointer-events: none;
   z-index: 0;
 }
@@ -239,7 +240,7 @@ body {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   margin-top: 12px;
 }
@@ -250,11 +251,11 @@ body {
   gap: 10px;
   padding: 18px;
   border-radius: 16px;
-  border: 1px solid var(--border-strong);
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, rgba(7, 8, 10, 0.96), rgba(6, 7, 9, 0.94));
   text-decoration: none;
   color: var(--text);
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45);
   transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
 }
 
@@ -277,7 +278,10 @@ body {
   color: var(--text);
   font-size: 12px;
   letter-spacing: 0.2px;
-  opacity: 0.85;
+  opacity: 0.88;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .pill {
@@ -308,6 +312,34 @@ body {
   background: rgba(255, 143, 143, 0.12);
   border-color: rgba(255, 143, 143, 0.35);
   color: #ffc7c7;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  letter-spacing: 0.2px;
+}
+
+.label--buy {
+  background: rgba(0, 200, 140, 0.16);
+  border-color: rgba(0, 200, 140, 0.45);
+  color: #a4f0d2;
+}
+
+.label--sell {
+  background: rgba(255, 143, 143, 0.16);
+  border-color: rgba(255, 143, 143, 0.45);
+  color: #ffc7c7;
+}
+
+.label--partial {
+  background: rgba(255, 208, 64, 0.16);
+  border-color: rgba(255, 208, 64, 0.45);
+  color: #ffe6a3;
 }
 
 .politician-card__name {
@@ -474,6 +506,12 @@ body {
   letter-spacing: 0.4px;
 }
 
+@media (max-width: 1280px) {
+  .politician-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 720px) {
   .shell-header {
   grid-template-columns: 1fr;
@@ -483,6 +521,10 @@ body {
   .shell-meta {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .politician-grid {
+    grid-template-columns: 1fr;
   }
 }
 
