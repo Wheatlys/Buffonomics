@@ -63,6 +63,11 @@ body {
   font-size: 0.9rem;
 }
 
+.brand-pill--link {
+  text-decoration: none;
+  color: inherit;
+}
+
 .app-bar__nav {
   display: inline-flex;
   align-items: center;

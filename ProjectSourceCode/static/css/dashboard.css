@@ -82,6 +82,11 @@ body {
   text-shadow: 0 0 6px rgba(255, 208, 64, 0.45);
 }
 
+.brand--link {
+  text-decoration: none;
+  color: inherit;
+}
+
 .brand__caret {
   color: var(--accent);
   animation: blink 0.95s steps(1, end) infinite;
@@ -146,6 +151,12 @@ body {
 
 .ghost-btn:active {
   transform: translateY(1px);
+}
+
+.ghost-btn.btn--following {
+  border-color: var(--accent-dark);
+  color: var(--accent);
+  background: rgba(255, 208, 64, 0.08);
 }
 
 .workspace {

@@ -14,10 +14,10 @@
   <div class="noise" aria-hidden="true"></div>
 
   <header class="shell-header">
-    <div class="brand">
+    <a class="brand brand--link" href="/dashboard" aria-label="Back to dashboard">
       <span class="brand__text">Buffonomics</span>
       <span class="brand__caret">▌</span>
-    </div>
+    </a>
 
     <nav class="shell-nav" aria-label="Primary">
       <button class="nav-link is-active" type="button">Overview</button>
@@ -47,13 +47,13 @@
       <section class="panel stocks-card">
         <header class="stocks-header">
           <div>
-            <p class="eyebrow">Stocks</p>
-            <h2>Today's Movers</h2>
+            <p class="eyebrow">Following</p>
+            <h2>Your List</h2>
           </div>
-          <span class="stocks-pill">Live</span>
+          <span class="stocks-pill">Synced</span>
         </header>
 
-        <div class="stocks-status" role="status">Fetching congressional trade data…</div>
+        <div class="stocks-status" role="status">Loading who you follow…</div>
         <ul class="stocks-list" aria-live="polite"></ul>
       </section>
     </aside>

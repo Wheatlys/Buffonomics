@@ -15,6 +15,7 @@ const useMemoryDb = process.env.USE_MEMORY_DB === 'true'
 
 const createMemoryDb = () => {
   const users = new Map();
+  const follows = new Map(); // email -> Set(queryKey)
 
   const clone = (record) => (record ? { ...record } : null);
 
@@ -53,6 +54,22 @@ const createMemoryDb = () => {
         return Array.from(users.values()).map((record) => clone(record));
       }
       return [];
+    },
+    async addFollow(email, queryKey) {
+      if (!email || !queryKey) return;
+      if (!follows.has(email)) {
+        follows.set(email, new Set());
+      }
+      follows.get(email).add(queryKey);
+    },
+    async removeFollow(email, queryKey) {
+      if (!email || !queryKey) return;
+      const set = follows.get(email);
+      if (set) set.delete(queryKey);
+    },
+    async listFollows(email) {
+      const set = follows.get(email);
+      return set ? Array.from(set) : [];
     },
   };
 };
@@ -309,6 +326,7 @@ const formatTradeRecord = (trade) => ({
 
 const formatPoliticianResponse = (record, trades = []) => ({
   id: record.id,
+  queryKey: record.query_key,
   name: record.name,
   party: record.party,
   position: record.position,
@@ -331,6 +349,19 @@ const formatPoliticianResponse = (record, trades = []) => ({
   trades: trades.map(formatTradeRecord),
 });
 
+const buildFollowEntry = (record = {}, trades = [], queryKey) => {
+  const latest = trades?.[0] || {};
+  return {
+    queryKey: record.query_key || queryKey,
+    name: record.name || queryKey,
+    role: record.position || null,
+    party: record.party || null,
+    lastTraded: toIsoDate(record.last_traded || latest.traded_date || latest.filed_date),
+    latestTicker: latest.stock_symbol || null,
+    latestTransaction: latest.transaction_type || null,
+  };
+};
+
 const db = useMemoryDb ? createMemoryDb() : pgp({
   host: process.env.DB_HOST
     || process.env.POSTGRES_HOST
@@ -346,6 +377,44 @@ const db = useMemoryDb ? createMemoryDb() : pgp({
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
 });
 const politicianRepo = createPoliticianRepository(db, useMemoryDb);
+const followsRepo = (() => {
+  if (useMemoryDb) {
+    return {
+      async follow(email, queryKey) {
+        return db.addFollow(email, queryKey);
+      },
+      async unfollow(email, queryKey) {
+        return db.removeFollow(email, queryKey);
+      },
+      async list(email) {
+        return db.listFollows(email);
+      },
+    };
+  }
+  return {
+    async follow(email, queryKey) {
+      await db.none(
+        `INSERT INTO follows(user_email, politician_query_key)
+         VALUES ($1, $2) ON CONFLICT (user_email, politician_query_key) DO NOTHING`,
+        [email, queryKey],
+      );
+    },
+    async unfollow(email, queryKey) {
+      await db.none('DELETE FROM follows WHERE user_email = $1 AND politician_query_key = $2', [email, queryKey]);
+    },
+    async list(email) {
+      const rows = await db.any(
+        `SELECT f.politician_query_key AS query_key, p.name, p.position, p.last_traded
+         FROM follows f
+         LEFT JOIN politicians p ON p.query_key = f.politician_query_key
+         WHERE f.user_email = $1
+         ORDER BY f.created_at DESC`,
+        [email],
+      );
+      return rows;
+    },
+  };
+})();
 
 const ensurePoliticianTables = async () => {
   if (useMemoryDb) return;
@@ -396,12 +465,53 @@ const ensurePoliticianTables = async () => {
     await db.none('ALTER TABLE trades ADD COLUMN IF NOT EXISTS spy_change NUMERIC;');
     await db.none('ALTER TABLE trades ADD COLUMN IF NOT EXISTS last_modified TIMESTAMPTZ;');
     await db.none('CREATE INDEX IF NOT EXISTS idx_trades_politician_id ON trades(politician_id);');
+    await db.none(`CREATE TABLE IF NOT EXISTS follows(
+      id SERIAL PRIMARY KEY,
+      user_email VARCHAR(50) NOT NULL REFERENCES users(email) ON DELETE CASCADE,
+      politician_query_key TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (user_email, politician_query_key)
+    );`);
+    await db.none('CREATE INDEX IF NOT EXISTS idx_follows_user ON follows(user_email);');
   } catch (error) {
     console.error('Failed to ensure politician tables exist:', error);
   }
 };
 
 const ensurePoliticianTablesPromise = ensurePoliticianTables();
+
+const loadPoliticianForFollow = async (queryValue) => {
+  const normalized = normalizeQuery(queryValue || '');
+  if (!normalized) {
+    const error = new Error('missingQuery');
+    error.status = 400;
+    throw error;
+  }
+
+  await ensurePoliticianTablesPromise;
+
+  let cached = await politicianRepo.getByQueryKey(normalized);
+  try {
+    const fresh = await fetchExternalPolitician(queryValue);
+    if (fresh) {
+      const persisted = await politicianRepo.upsert(normalized, fresh);
+      return persisted;
+    }
+  } catch (error) {
+    if (cached) {
+      return cached;
+    }
+    throw error;
+  }
+
+  if (cached) {
+    return cached;
+  }
+
+  const error = new Error('notFound');
+  error.status = 404;
+  throw error;
+};
 
 const app = express();
 app.use(bodyParser.json());
@@ -708,6 +818,77 @@ app.get('/api/politicians/search', requireAuth, async (req, res) => {
     console.error('Failed to search politicians:', error?.message || error);
     const status = error.message === 'missingQuiverKey' ? 501 : 502;
     return res.status(status).json({ error: 'quiverUnavailable' });
+  }
+});
+
+app.get('/api/follows', requireAuth, async (req, res) => {
+  try {
+    await ensurePoliticianTablesPromise;
+    const rows = await followsRepo.list(req.session.user.email);
+    const items = await Promise.all((rows || []).map(async (row) => {
+      const queryKey = row.query_key || row.politician_query_key || row;
+      const cached = await politicianRepo.getByQueryKey(queryKey);
+      if (cached) {
+        return buildFollowEntry(cached.record, cached.trades, queryKey);
+      }
+      return {
+        queryKey,
+        name: row.name || queryKey,
+        role: row.position || null,
+        party: row.party || null,
+        lastTraded: row.last_traded ? toIsoDate(row.last_traded) : null,
+        latestTicker: null,
+        latestTransaction: null,
+      };
+    }));
+    return res.json({ items });
+  } catch (error) {
+    console.error('Failed to list follows:', error);
+    return res.status(500).json({ error: 'server' });
+  }
+});
+
+app.post('/api/follows', requireAuth, async (req, res) => {
+  const rawQuery = (req.body.politician || req.body.query || req.body.name || '').trim();
+  const normalized = normalizeQuery(rawQuery);
+  if (!normalized) {
+    return res.status(400).json({ error: 'missingPolitician' });
+  }
+
+  try {
+    const persisted = await loadPoliticianForFollow(rawQuery);
+    await followsRepo.follow(req.session.user.email, normalized);
+    const item = buildFollowEntry(persisted.record, persisted.trades, normalized);
+    return res.status(201).json({ item });
+  } catch (error) {
+    console.error('Failed to follow:', error);
+    if (error.status === 404 || error.message === 'notFound') {
+      return res.status(404).json({ error: 'notFound' });
+    }
+    if (error.message === 'missingQuery') {
+      return res.status(400).json({ error: 'missingPolitician' });
+    }
+    return res.status(500).json({ error: 'server' });
+  }
+});
+
+app.delete('/api/follows', requireAuth, async (req, res) => {
+  const rawQuery = (req.query.politician
+    || req.query.query
+    || req.query.name
+    || req.body?.politician
+    || '').trim();
+  const normalized = normalizeQuery(rawQuery);
+  if (!normalized) {
+    return res.status(400).json({ error: 'missingPolitician' });
+  }
+
+  try {
+    await followsRepo.unfollow(req.session.user.email, normalized);
+    return res.status(204).end();
+  } catch (error) {
+    console.error('Failed to unfollow:', error);
+    return res.status(500).json({ error: 'server' });
   }
 });
 
