@@ -5,7 +5,7 @@ const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const pgp = require('pg-promise')();
-const { fetchExternalPolitician, normalizeQuery } = require('./services/politicians');
+const { fetchExternalCongressMember, normalizeQuery } = require('./services/congress');
 const axios = require('axios');
 
 const normalizeFollowKey = (value = '') => normalizeQuery(value).replace(/[^a-z0-9]/g, '');
@@ -76,7 +76,7 @@ const createMemoryDb = () => {
   };
 };
 
-const createInMemoryPoliticianRepo = () => {
+const createInMemoryCongressRepo = () => {
   const politicians = new Map();
   const queryIndex = new Map();
   const trades = new Map();
@@ -169,7 +169,7 @@ const createInMemoryPoliticianRepo = () => {
   };
 };
 
-const createPgPoliticianRepo = (dbInstance) => ({
+const createPgCongressRepo = (dbInstance) => ({
   async getByQueryKey(queryKey) {
     const record = await dbInstance.oneOrNone('SELECT * FROM politicians WHERE query_key = $1', [queryKey]);
     if (!record) return null;
@@ -280,9 +280,9 @@ const createPgPoliticianRepo = (dbInstance) => ({
   },
 });
 
-const createPoliticianRepository = (dbInstance, inMemory) => (inMemory
-  ? createInMemoryPoliticianRepo()
-  : createPgPoliticianRepo(dbInstance));
+const createCongressRepository = (dbInstance, inMemory) => (inMemory
+  ? createInMemoryCongressRepo()
+  : createPgCongressRepo(dbInstance));
 
 const toIsoDate = (value) => {
   if (!value) return null;
@@ -326,7 +326,7 @@ const formatTradeRecord = (trade) => ({
     : 'buy',
 });
 
-const formatPoliticianResponse = (record, trades = []) => ({
+const formatCongressResponse = (record, trades = []) => ({
   id: record.id,
   queryKey: record.query_key,
   name: record.name,
@@ -378,7 +378,7 @@ const db = useMemoryDb ? createMemoryDb() : pgp({
   password: process.env.POSTGRES_PASSWORD || 'postgres',
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
 });
-const politicianRepo = createPoliticianRepository(db, useMemoryDb);
+const congressRepo = createCongressRepository(db, useMemoryDb);
 const followsRepo = (() => {
   if (useMemoryDb) {
     return {
@@ -418,7 +418,7 @@ const followsRepo = (() => {
   };
 })();
 
-const ensurePoliticianTables = async () => {
+const ensureCongressTables = async () => {
   if (useMemoryDb) return;
   try {
     await db.none(`CREATE TABLE IF NOT EXISTS politicians(
@@ -476,13 +476,13 @@ const ensurePoliticianTables = async () => {
     );`);
     await db.none('CREATE INDEX IF NOT EXISTS idx_follows_user ON follows(user_email);');
   } catch (error) {
-    console.error('Failed to ensure politician tables exist:', error);
+    console.error('Failed to ensure congress tables exist:', error);
   }
 };
 
-const ensurePoliticianTablesPromise = ensurePoliticianTables();
+const ensureCongressTablesPromise = ensureCongressTables();
 
-const loadPoliticianForFollow = async (queryValue) => {
+const loadCongressMemberForFollow = async (queryValue) => {
   const normalized = normalizeQuery(queryValue || '');
   const canonical = normalizeFollowKey(queryValue || '');
   const candidateKeys = Array.from(
@@ -494,14 +494,14 @@ const loadPoliticianForFollow = async (queryValue) => {
     throw error;
   }
 
-  await ensurePoliticianTablesPromise;
+  await ensureCongressTablesPromise;
 
   let cached = null;
   let selectedKey = candidateKeys[0];
   // Prefer any existing record under either normalized or canonical key
   // eslint-disable-next-line no-restricted-syntax
   for (const key of candidateKeys) {
-    const match = await politicianRepo.getByQueryKey(key);
+    const match = await congressRepo.getByQueryKey(key);
     if (match) {
       cached = match;
       selectedKey = key;
@@ -527,13 +527,13 @@ const loadPoliticianForFollow = async (queryValue) => {
     avatarUrl: null,
     trades: [],
   };
-  const persisted = await politicianRepo.upsert(selectedKey, placeholder);
+  const persisted = await congressRepo.upsert(selectedKey, placeholder);
 
   // Try to enrich in the background without blocking the response
-  fetchExternalPolitician(queryValue)
+  fetchExternalCongressMember(queryValue)
     .then((fresh) => {
       if (fresh) {
-        return politicianRepo.upsert(selectedKey, fresh);
+        return congressRepo.upsert(selectedKey, fresh);
       }
       return null;
     })
@@ -684,7 +684,7 @@ app.get('/api/stocks/movers', requireAuth, async (req, res) => {
   }
 });
 
-app.get('/api/politicians/highlights', requireAuth, async (req, res) => {
+app.get('/api/congress/highlights', requireAuth, async (req, res) => {
   if (!QUIVER_API_KEY) {
     return res.status(501).json({ error: 'quiverKeyMissing' });
   }
@@ -782,13 +782,13 @@ app.get('/api/politicians/highlights', requireAuth, async (req, res) => {
 
     return res.json({ items: highlights });
   } catch (error) {
-    console.error('Failed to fetch politician highlights:', error?.message || error);
+    console.error('Failed to fetch congressional highlights:', error?.message || error);
     const status = error.message === 'missingQuiverKey' ? 501 : 502;
     return res.status(status).json({ error: 'quiverUnavailable' });
   }
 });
 
-app.get('/api/politicians/search', requireAuth, async (req, res) => {
+app.get('/api/congress/search', requireAuth, async (req, res) => {
   if (!QUIVER_API_KEY) {
     return res.status(501).json({ error: 'quiverKeyMissing' });
   }
@@ -851,7 +851,7 @@ app.get('/api/politicians/search', requireAuth, async (req, res) => {
 
     return res.json({ items });
   } catch (error) {
-    console.error('Failed to search politicians:', error?.message || error);
+    console.error('Failed to search congress members:', error?.message || error);
     const status = error.message === 'missingQuiverKey' ? 501 : 502;
     return res.status(status).json({ error: 'quiverUnavailable' });
   }
@@ -859,7 +859,7 @@ app.get('/api/politicians/search', requireAuth, async (req, res) => {
 
 app.get('/api/follows', requireAuth, async (req, res) => {
   try {
-    await ensurePoliticianTablesPromise;
+    await ensureCongressTablesPromise;
     const rows = await followsRepo.list(req.session.user.email);
     const deduped = [];
     const seen = new Set();
@@ -873,7 +873,7 @@ app.get('/api/follows', requireAuth, async (req, res) => {
 
     const items = await Promise.all((deduped || []).map(async (row) => {
       const queryKey = row.query_key || row.politician_query_key || row;
-      const cached = await politicianRepo.getByQueryKey(queryKey);
+      const cached = await congressRepo.getByQueryKey(queryKey);
       if (cached) {
         return buildFollowEntry(cached.record, cached.trades, queryKey);
       }
@@ -895,15 +895,15 @@ app.get('/api/follows', requireAuth, async (req, res) => {
 });
 
 app.post('/api/follows', requireAuth, async (req, res) => {
-  const rawQuery = (req.body.politician || req.body.query || req.body.name || '').trim();
-  const normalized = normalizeQuery(rawQuery);
-  if (!normalized) {
-    return res.status(400).json({ error: 'missingPolitician' });
+  const rawQuery = (req.body.congress || req.body.politician || req.body.query || req.body.name || '').trim();
+  const canonical = normalizeFollowKey(rawQuery);
+  if (!canonical) {
+    return res.status(400).json({ error: 'missingCongressMember' });
   }
 
   try {
-    const persisted = await loadPoliticianForFollow(rawQuery);
-    const followKey = persisted?.record?.query_key || normalized;
+    const persisted = await loadCongressMemberForFollow(rawQuery);
+    const followKey = persisted?.record?.query_key || canonical;
     await followsRepo.follow(req.session.user.email, followKey);
     const item = buildFollowEntry(persisted.record, persisted.trades, followKey);
     return res.status(201).json({ item });
@@ -913,25 +913,31 @@ app.post('/api/follows', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'notFound' });
     }
     if (error.message === 'missingQuery') {
-      return res.status(400).json({ error: 'missingPolitician' });
+      return res.status(400).json({ error: 'missingCongressMember' });
     }
     return res.status(500).json({ error: 'server' });
   }
 });
 
 app.delete('/api/follows', requireAuth, async (req, res) => {
-  const rawQuery = (req.query.politician
+  const rawQuery = (req.query.congress
+    || req.query.politician
     || req.query.query
     || req.query.name
+    || req.body?.congress
     || req.body?.politician
     || '').trim();
   const normalized = normalizeQuery(rawQuery);
-  if (!normalized) {
-    return res.status(400).json({ error: 'missingPolitician' });
+  const canonical = normalizeFollowKey(rawQuery);
+  const candidateKeys = Array.from(
+    new Set([normalized, canonical].filter(Boolean)),
+  );
+  if (!candidateKeys.length) {
+    return res.status(400).json({ error: 'missingCongressMember' });
   }
 
   try {
-    await followsRepo.unfollow(req.session.user.email, normalized);
+    await Promise.all(candidateKeys.map((key) => followsRepo.unfollow(req.session.user.email, key)));
     return res.status(204).end();
   } catch (error) {
     console.error('Failed to unfollow:', error);
@@ -1082,11 +1088,11 @@ app.get('/dashboard', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, '../templates/dashboard.html'));
 });
 
-app.get('/politician', requireAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, '../templates/politician.html'));
+app.get('/congress', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, '../templates/congress.html'));
 });
 
-app.get('/api/politicians', requireAuth, async (req, res) => {
+app.get('/api/congress', requireAuth, async (req, res) => {
   const queryValue = req.query.name || req.query.q || '';
   const normalized = normalizeQuery(queryValue);
 
@@ -1095,20 +1101,20 @@ app.get('/api/politicians', requireAuth, async (req, res) => {
   }
 
   try {
-    await ensurePoliticianTablesPromise;
-    const cached = await politicianRepo.getByQueryKey(normalized);
+    await ensureCongressTablesPromise;
+    const cached = await congressRepo.getByQueryKey(normalized);
 
     try {
-      const fresh = await fetchExternalPolitician(queryValue);
+      const fresh = await fetchExternalCongressMember(queryValue);
       if (fresh) {
-        const persisted = await politicianRepo.upsert(normalized, fresh);
+        const persisted = await congressRepo.upsert(normalized, fresh);
         return res.json({
           source: 'api',
-          politician: formatPoliticianResponse(persisted.record, persisted.trades),
+          congress: formatCongressResponse(persisted.record, persisted.trades),
         });
       }
     } catch (error) {
-      console.error('Failed to load politician data from API:', error);
+      console.error('Failed to load congress data from API:', error);
       if (error.message === 'apiUnauthorized') {
         return res.status(502).json({ error: 'apiUnauthorized' });
       }
@@ -1120,13 +1126,13 @@ app.get('/api/politicians', requireAuth, async (req, res) => {
     if (cached) {
       return res.json({
         source: 'cache',
-        politician: formatPoliticianResponse(cached.record, cached.trades),
+        congress: formatCongressResponse(cached.record, cached.trades),
       });
     }
 
     return res.status(404).json({ error: 'notFound' });
   } catch (error) {
-    console.error('Failed to load politician data:', error);
+    console.error('Failed to load congress data:', error);
     return res.status(500).json({ error: 'server' });
   }
 });

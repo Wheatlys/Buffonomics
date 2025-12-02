@@ -222,7 +222,7 @@ body {
   gap: 18px;
 }
 
-.politicians-panel {
+.congress-panel {
   position: relative;
   overflow: hidden;
   isolation: isolate;
@@ -231,7 +231,7 @@ body {
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.45);
 }
 
-.politicians-panel::before {
+.congress-panel::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -241,13 +241,13 @@ body {
   z-index: 0;
 }
 
-.politician-status {
+.congress-status {
   margin: 6px 0 12px;
   color: var(--muted);
   font-size: 13px;
 }
 
-.politician-grid {
+.congress-grid {
   position: relative;
   z-index: 1;
   display: grid;
@@ -256,7 +256,7 @@ body {
   margin-top: 12px;
 }
 
-.politician-card {
+.congress-card {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -270,13 +270,13 @@ body {
   transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
 }
 
-.politician-card:hover {
+.congress-card:hover {
   transform: translateY(-2px);
   border-color: rgba(255, 208, 64, 0.35);
   box-shadow: 0 20px 38px rgba(0, 0, 0, 0.45);
 }
 
-.politician-card__meta {
+.congress-card__meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -285,7 +285,7 @@ body {
   color: var(--muted);
 }
 
-.politician-card__role {
+.congress-card__role {
   color: var(--text);
   font-size: 12px;
   letter-spacing: 0.2px;
@@ -353,26 +353,26 @@ body {
   color: #ffe6a3;
 }
 
-.politician-card__name {
+.congress-card__name {
   margin: 0;
   font-size: 18px;
   letter-spacing: 0.3px;
 }
 
-.politician-card__party {
+.congress-card__party {
   margin: 0;
   color: var(--muted);
   font-size: 13px;
 }
 
-.politician-card__summary {
+.congress-card__summary {
   margin: 4px 0 0;
   color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
 }
 
-.politician-card__tags {
+.congress-card__tags {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -392,7 +392,7 @@ body {
   color: var(--text);
 }
 
-.politician-card__footer {
+.congress-card__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -518,7 +518,7 @@ body {
 }
 
 @media (max-width: 1280px) {
-  .politician-grid {
+  .congress-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -534,7 +534,7 @@ body {
     justify-content: flex-start;
   }
 
-  .politician-grid {
+  .congress-grid {
     grid-template-columns: 1fr;
   }
 }

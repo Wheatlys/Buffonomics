@@ -330,7 +330,7 @@ const dedupeRecords = (records = []) => {
   return Array.from(map.values()).map((item) => item.record);
 };
 
-const fetchQuiverPolitician = async (query) => {
+const fetchQuiverCongressMember = async (query) => {
   const apiKey = process.env.QUIVER_API_KEY;
   if (!apiKey) return null;
 
@@ -386,11 +386,11 @@ const fetchQuiverPolitician = async (query) => {
   return buildPayloadFromQuiver(normalized, uniqueRecords);
 };
 
-const fetchExternalPolitician = async (query) => {
+const fetchExternalCongressMember = async (query) => {
   const normalized = normalizeQuery(query);
   if (!normalized) return null;
 
-  const quiverResult = await fetchQuiverPolitician(query);
+  const quiverResult = await fetchQuiverCongressMember(query);
   if (quiverResult) {
     return quiverResult;
   }
@@ -411,6 +411,6 @@ const fetchExternalPolitician = async (query) => {
 };
 
 module.exports = {
-  fetchExternalPolitician,
+  fetchExternalCongressMember,
   normalizeQuery,
 };

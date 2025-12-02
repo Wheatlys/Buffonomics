@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Buffonomics · Politician Profile</title>
-  <link rel="stylesheet" href="/static/css/politicians.css" />
+  <title>Buffonomics · Congress Member Profile</title>
+  <link rel="stylesheet" href="/static/css/congress.css" />
 </head>
 <body>
   <div class="shell">
@@ -29,9 +29,9 @@
           Connect your preferred data source to see performance, positions, and alerts.
         </p>
       </div>
-      <form class="hero-card__search" id="politicianSearch" autocomplete="off">
-        <label for="searchInput" class="sr-only">Search Politician</label>
-        <input id="searchInput" name="query" type="search" placeholder="Enter a name (e.g. Nancy Pelosi)" required />
+      <form class="hero-card__search" id="congressSearch" autocomplete="off">
+        <label for="searchInput" class="sr-only">Search Congress Member</label>
+        <input id="searchInput" name="query" type="search" placeholder="Enter a Congress member (e.g. Nancy Pelosi)" required />
         <button class="btn" type="submit">Search</button>
       </form>
     </section>
@@ -42,9 +42,9 @@
           <p class="stack-card__eyebrow">Profile</p>
           <h2 class="stack-card__title">Trading Overview</h2>
           <div class="profile__identity">
-            <p class="profile__name" id="politicianName">—</p>
-            <p class="profile__position" id="politicianPosition">—</p>
-            <p class="profile__party" id="politicianParty">—</p>
+            <p class="profile__name" id="congressName">—</p>
+            <p class="profile__position" id="congressPosition">—</p>
+            <p class="profile__party" id="congressParty">—</p>
             <button type="button" class="profile__follow">Follow Trading Activity</button>
           </div>
 
@@ -97,7 +97,7 @@
           </thead>
           <tbody id="tradesTableBody">
             <tr>
-              <td colspan="8">Search for a politician to load trades…</td>
+              <td colspan="8">Search for a Congress member to load trades…</td>
             </tr>
           </tbody>
         </table>
@@ -116,6 +116,6 @@
     </section>
   </div>
 
-  <script src="/scripts/politicians.js" defer></script>
+  <script src="/scripts/congress.js" defer></script>
 </body>
 </html>

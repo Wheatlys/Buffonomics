@@ -1,7 +1,7 @@
 {
   "name": "buffonomics",
   "version": "1.0.0",
-  "description": "Stock tracker and politician trades app",
+  "description": "Stock tracker and congressional trades app",
   "main": "src/index.js",
   "scripts": {
     "prestart": "npm install",
