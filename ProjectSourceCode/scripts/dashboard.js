@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const performSearch = async (query) => {
     if (!searchResults || !searchStatus) return;
     if (!query || query.length < 2) {
-      updateSearchStatus('Start typing a name…');
+      updateSearchStatus('Start typing a Congress member name…');
       searchResults.innerHTML = '';
       return;
     }
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSearchStatus('Searching…');
     try {
       const params = new URLSearchParams({ q: query });
-      const response = await fetch(`/api/politicians/search?${params.toString()}`, {
+      const response = await fetch(`/api/congress/search?${params.toString()}`, {
         headers: { Accept: 'application/json' },
       });
       if (!response.ok) throw new Error('searchFailed');
@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
     event.preventDefault();
     const query = (searchInput?.value || '').trim();
     if (!query) {
-      updateSearchStatus('Enter a name to search.');
+      updateSearchStatus('Enter a Congress member name to search.');
       return;
     }
 
@@ -172,14 +172,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const params = new URLSearchParams({ name: query });
-      const response = await fetch(`/api/politicians?${params.toString()}`, {
+      const response = await fetch(`/api/congress?${params.toString()}`, {
         headers: { Accept: 'application/json' },
       });
       if (!response.ok) {
         throw new Error('notFound');
       }
       const payload = await response.json();
-      const targetName = payload?.politician?.name || query;
+      const targetName = payload?.congress?.name || query;
       window.location.href = `/congress?congress=${encodeURIComponent(targetName)}`;
     } catch (error) {
       console.error('Search failed:', error);
@@ -347,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
     congressRefresh?.setAttribute('disabled', 'true');
 
     try {
-      const response = await fetch('/api/politicians/highlights');
+      const response = await fetch('/api/congress/highlights');
       if (!response.ok) {
         throw new Error('Bad response');
       }

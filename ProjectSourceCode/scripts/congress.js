@@ -187,7 +187,7 @@ const renderRawPayload = (payload) => {
   elements.rawPayload.textContent = JSON.stringify(payload, null, 2);
 };
 
-const loadPolitician = async (query) => {
+const loadCongressMember = async (query) => {
   const trimmed = (query || '').trim();
   if (!trimmed) {
     clearProfile();
@@ -198,7 +198,7 @@ const loadPolitician = async (query) => {
   setLoadingState(true);
   try {
     const params = new URLSearchParams({ name: trimmed, fresh: 'true' });
-    const response = await fetch(`/api/politicians?${params.toString()}`, {
+    const response = await fetch(`/api/congress?${params.toString()}`, {
       headers: { Accept: 'application/json' },
     });
 
@@ -214,8 +214,8 @@ const loadPolitician = async (query) => {
     }
 
     const payload = await response.json();
-    if (payload?.politician) {
-      renderProfile(payload.politician);
+    if (payload?.congress) {
+      renderProfile(payload.congress);
       renderRawPayload(payload);
       if (window.history && window.history.replaceState) {
         const paramsObj = new URLSearchParams(window.location.search);
@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (elements.form) {
     elements.form.addEventListener('submit', (event) => {
       event.preventDefault();
-      loadPolitician(elements.input?.value);
+      loadCongressMember(elements.input?.value);
     });
   }
 
@@ -301,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const initial = params.get('congress');
   if (initial && elements.input) {
     elements.input.value = initial;
-    loadPolitician(initial);
+    loadCongressMember(initial);
   } else {
     clearProfile();
   }

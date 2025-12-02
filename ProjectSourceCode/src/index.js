@@ -5,7 +5,7 @@ const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const pgp = require('pg-promise')();
-const { fetchExternalPolitician, normalizeQuery } = require('./services/congress');
+const { fetchExternalCongressMember, normalizeQuery } = require('./services/congress');
 const axios = require('axios');
 
 dotenv.config({ path: path.join(__dirname, '../.env') });
@@ -74,7 +74,7 @@ const createMemoryDb = () => {
   };
 };
 
-const createInMemoryPoliticianRepo = () => {
+const createInMemoryCongressRepo = () => {
   const politicians = new Map();
   const queryIndex = new Map();
   const trades = new Map();
@@ -167,7 +167,7 @@ const createInMemoryPoliticianRepo = () => {
   };
 };
 
-const createPgPoliticianRepo = (dbInstance) => ({
+const createPgCongressRepo = (dbInstance) => ({
   async getByQueryKey(queryKey) {
     const record = await dbInstance.oneOrNone('SELECT * FROM politicians WHERE query_key = $1', [queryKey]);
     if (!record) return null;
@@ -278,9 +278,9 @@ const createPgPoliticianRepo = (dbInstance) => ({
   },
 });
 
-const createPoliticianRepository = (dbInstance, inMemory) => (inMemory
-  ? createInMemoryPoliticianRepo()
-  : createPgPoliticianRepo(dbInstance));
+const createCongressRepository = (dbInstance, inMemory) => (inMemory
+  ? createInMemoryCongressRepo()
+  : createPgCongressRepo(dbInstance));
 
 const toIsoDate = (value) => {
   if (!value) return null;
@@ -324,7 +324,7 @@ const formatTradeRecord = (trade) => ({
     : 'buy',
 });
 
-const formatPoliticianResponse = (record, trades = []) => ({
+const formatCongressResponse = (record, trades = []) => ({
   id: record.id,
   queryKey: record.query_key,
   name: record.name,
@@ -376,7 +376,7 @@ const db = useMemoryDb ? createMemoryDb() : pgp({
   password: process.env.POSTGRES_PASSWORD || 'postgres',
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
 });
-const politicianRepo = createPoliticianRepository(db, useMemoryDb);
+const congressRepo = createCongressRepository(db, useMemoryDb);
 const followsRepo = (() => {
   if (useMemoryDb) {
     return {
@@ -416,7 +416,7 @@ const followsRepo = (() => {
   };
 })();
 
-const ensurePoliticianTables = async () => {
+const ensureCongressTables = async () => {
   if (useMemoryDb) return;
   try {
     await db.none(`CREATE TABLE IF NOT EXISTS politicians(
@@ -474,13 +474,13 @@ const ensurePoliticianTables = async () => {
     );`);
     await db.none('CREATE INDEX IF NOT EXISTS idx_follows_user ON follows(user_email);');
   } catch (error) {
-    console.error('Failed to ensure politician tables exist:', error);
+    console.error('Failed to ensure congress tables exist:', error);
   }
 };
 
-const ensurePoliticianTablesPromise = ensurePoliticianTables();
+const ensureCongressTablesPromise = ensureCongressTables();
 
-const loadPoliticianForFollow = async (queryValue) => {
+const loadCongressMemberForFollow = async (queryValue) => {
   const normalized = normalizeQuery(queryValue || '');
   if (!normalized) {
     const error = new Error('missingQuery');
@@ -488,13 +488,13 @@ const loadPoliticianForFollow = async (queryValue) => {
     throw error;
   }
 
-  await ensurePoliticianTablesPromise;
+  await ensureCongressTablesPromise;
 
-  let cached = await politicianRepo.getByQueryKey(normalized);
+  let cached = await congressRepo.getByQueryKey(normalized);
   try {
-    const fresh = await fetchExternalPolitician(queryValue);
+    const fresh = await fetchExternalCongressMember(queryValue);
     if (fresh) {
-      const persisted = await politicianRepo.upsert(normalized, fresh);
+      const persisted = await congressRepo.upsert(normalized, fresh);
       return persisted;
     }
   } catch (error) {
@@ -653,7 +653,7 @@ app.get('/api/stocks/movers', requireAuth, async (req, res) => {
   }
 });
 
-app.get('/api/politicians/highlights', requireAuth, async (req, res) => {
+app.get('/api/congress/highlights', requireAuth, async (req, res) => {
   if (!QUIVER_API_KEY) {
     return res.status(501).json({ error: 'quiverKeyMissing' });
   }
@@ -757,7 +757,7 @@ app.get('/api/politicians/highlights', requireAuth, async (req, res) => {
   }
 });
 
-app.get('/api/politicians/search', requireAuth, async (req, res) => {
+app.get('/api/congress/search', requireAuth, async (req, res) => {
   if (!QUIVER_API_KEY) {
     return res.status(501).json({ error: 'quiverKeyMissing' });
   }
@@ -828,11 +828,11 @@ app.get('/api/politicians/search', requireAuth, async (req, res) => {
 
 app.get('/api/follows', requireAuth, async (req, res) => {
   try {
-    await ensurePoliticianTablesPromise;
+    await ensureCongressTablesPromise;
     const rows = await followsRepo.list(req.session.user.email);
     const items = await Promise.all((rows || []).map(async (row) => {
       const queryKey = row.query_key || row.politician_query_key || row;
-      const cached = await politicianRepo.getByQueryKey(queryKey);
+      const cached = await congressRepo.getByQueryKey(queryKey);
       if (cached) {
         return buildFollowEntry(cached.record, cached.trades, queryKey);
       }
@@ -857,11 +857,11 @@ app.post('/api/follows', requireAuth, async (req, res) => {
   const rawQuery = (req.body.congress || req.body.politician || req.body.query || req.body.name || '').trim();
   const normalized = normalizeQuery(rawQuery);
   if (!normalized) {
-    return res.status(400).json({ error: 'missingPolitician' });
+    return res.status(400).json({ error: 'missingCongressMember' });
   }
 
   try {
-    const persisted = await loadPoliticianForFollow(rawQuery);
+    const persisted = await loadCongressMemberForFollow(rawQuery);
     await followsRepo.follow(req.session.user.email, normalized);
     const item = buildFollowEntry(persisted.record, persisted.trades, normalized);
     return res.status(201).json({ item });
@@ -871,7 +871,7 @@ app.post('/api/follows', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'notFound' });
     }
     if (error.message === 'missingQuery') {
-      return res.status(400).json({ error: 'missingPolitician' });
+      return res.status(400).json({ error: 'missingCongressMember' });
     }
     return res.status(500).json({ error: 'server' });
   }
@@ -887,7 +887,7 @@ app.delete('/api/follows', requireAuth, async (req, res) => {
     || '').trim();
   const normalized = normalizeQuery(rawQuery);
   if (!normalized) {
-    return res.status(400).json({ error: 'missingPolitician' });
+    return res.status(400).json({ error: 'missingCongressMember' });
   }
 
   try {
@@ -1046,7 +1046,7 @@ app.get('/congress', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, '../templates/congress.html'));
 });
 
-app.get('/api/politicians', requireAuth, async (req, res) => {
+app.get('/api/congress', requireAuth, async (req, res) => {
   const queryValue = req.query.name || req.query.q || '';
   const normalized = normalizeQuery(queryValue);
 
@@ -1055,16 +1055,16 @@ app.get('/api/politicians', requireAuth, async (req, res) => {
   }
 
   try {
-    await ensurePoliticianTablesPromise;
-    const cached = await politicianRepo.getByQueryKey(normalized);
+    await ensureCongressTablesPromise;
+    const cached = await congressRepo.getByQueryKey(normalized);
 
     try {
-      const fresh = await fetchExternalPolitician(queryValue);
+      const fresh = await fetchExternalCongressMember(queryValue);
       if (fresh) {
-        const persisted = await politicianRepo.upsert(normalized, fresh);
+        const persisted = await congressRepo.upsert(normalized, fresh);
         return res.json({
           source: 'api',
-          politician: formatPoliticianResponse(persisted.record, persisted.trades),
+          congress: formatCongressResponse(persisted.record, persisted.trades),
         });
       }
     } catch (error) {
@@ -1080,7 +1080,7 @@ app.get('/api/politicians', requireAuth, async (req, res) => {
     if (cached) {
       return res.json({
         source: 'cache',
-        politician: formatPoliticianResponse(cached.record, cached.trades),
+        congress: formatCongressResponse(cached.record, cached.trades),
       });
     }
 
