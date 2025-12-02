@@ -1,5 +1,5 @@
 # Buffonomics
-Buffonomics is a tool for tracking the trading activity of politicians in the stock market.
+Buffonomics tracks the trading activity of U.S. Congress members in the stock market.
 
 ## Contributors
 - [Elijah Boyer](https://github.com/spell-bound)  
@@ -26,7 +26,7 @@ Containerization:
 - Docker
 
 External API:
-We will be using Quiver Quant's API for stock market and politician trading data. 
+We use Quiver Quant's API for stock market and congressional trading data. 
 [Link](https://api.quiverquant.com/docs/#/)
 
 ## Prerequisites to run the application

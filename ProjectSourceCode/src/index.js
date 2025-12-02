@@ -5,7 +5,7 @@ const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const pgp = require('pg-promise')();
-const { fetchExternalPolitician, normalizeQuery } = require('./services/politicians');
+const { fetchExternalPolitician, normalizeQuery } = require('./services/congress');
 const axios = require('axios');
 
 dotenv.config({ path: path.join(__dirname, '../.env') });
@@ -751,7 +751,7 @@ app.get('/api/politicians/highlights', requireAuth, async (req, res) => {
 
     return res.json({ items: highlights });
   } catch (error) {
-    console.error('Failed to fetch politician highlights:', error?.message || error);
+    console.error('Failed to fetch congressional highlights:', error?.message || error);
     const status = error.message === 'missingQuiverKey' ? 501 : 502;
     return res.status(status).json({ error: 'quiverUnavailable' });
   }
@@ -820,7 +820,7 @@ app.get('/api/politicians/search', requireAuth, async (req, res) => {
 
     return res.json({ items });
   } catch (error) {
-    console.error('Failed to search politicians:', error?.message || error);
+    console.error('Failed to search congress members:', error?.message || error);
     const status = error.message === 'missingQuiverKey' ? 501 : 502;
     return res.status(status).json({ error: 'quiverUnavailable' });
   }
@@ -854,7 +854,7 @@ app.get('/api/follows', requireAuth, async (req, res) => {
 });
 
 app.post('/api/follows', requireAuth, async (req, res) => {
-  const rawQuery = (req.body.politician || req.body.query || req.body.name || '').trim();
+  const rawQuery = (req.body.congress || req.body.politician || req.body.query || req.body.name || '').trim();
   const normalized = normalizeQuery(rawQuery);
   if (!normalized) {
     return res.status(400).json({ error: 'missingPolitician' });
@@ -878,9 +878,11 @@ app.post('/api/follows', requireAuth, async (req, res) => {
 });
 
 app.delete('/api/follows', requireAuth, async (req, res) => {
-  const rawQuery = (req.query.politician
+  const rawQuery = (req.query.congress
+    || req.query.politician
     || req.query.query
     || req.query.name
+    || req.body?.congress
     || req.body?.politician
     || '').trim();
   const normalized = normalizeQuery(rawQuery);
@@ -1040,8 +1042,8 @@ app.get('/dashboard', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, '../templates/dashboard.html'));
 });
 
-app.get('/politician', requireAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, '../templates/politician.html'));
+app.get('/congress', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, '../templates/congress.html'));
 });
 
 app.get('/api/politicians', requireAuth, async (req, res) => {
@@ -1066,7 +1068,7 @@ app.get('/api/politicians', requireAuth, async (req, res) => {
         });
       }
     } catch (error) {
-      console.error('Failed to load politician data from API:', error);
+      console.error('Failed to load congress data from API:', error);
       if (error.message === 'apiUnauthorized') {
         return res.status(502).json({ error: 'apiUnauthorized' });
       }
@@ -1084,7 +1086,7 @@ app.get('/api/politicians', requireAuth, async (req, res) => {
 
     return res.status(404).json({ error: 'notFound' });
   } catch (error) {
-    console.error('Failed to load politician data:', error);
+    console.error('Failed to load congress data:', error);
     return res.status(500).json({ error: 'server' });
   }
 });

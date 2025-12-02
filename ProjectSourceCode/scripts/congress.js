@@ -21,13 +21,13 @@ const formatPercent = (value) => {
 };
 
 const elements = {
-  form: document.getElementById('politicianSearch'),
+  form: document.getElementById('congressSearch'),
   input: document.getElementById('searchInput'),
   heroHeadline: document.getElementById('heroHeadline'),
   heroSubline: document.getElementById('heroSubline'),
-  name: document.getElementById('politicianName'),
-  position: document.getElementById('politicianPosition'),
-  party: document.getElementById('politicianParty'),
+  name: document.getElementById('congressName'),
+  position: document.getElementById('congressPosition'),
+  party: document.getElementById('congressParty'),
   tradeVolume: document.getElementById('statTradeVolume'),
   totalTrades: document.getElementById('statTotalTrades'),
   lastTraded: document.getElementById('statLastTraded'),
@@ -191,7 +191,7 @@ const loadPolitician = async (query) => {
   const trimmed = (query || '').trim();
   if (!trimmed) {
     clearProfile();
-    showStatus('Enter a name', 'Please provide a politician name to begin.');
+    showStatus('Enter a name', 'Please provide a Congress member name to begin.');
     return;
   }
 
@@ -219,14 +219,14 @@ const loadPolitician = async (query) => {
       renderRawPayload(payload);
       if (window.history && window.history.replaceState) {
         const paramsObj = new URLSearchParams(window.location.search);
-        paramsObj.set('politician', trimmed);
+        paramsObj.set('congress', trimmed);
         window.history.replaceState({}, document.title, `${window.location.pathname}?${paramsObj.toString()}`);
       }
     } else {
       clearProfile();
     }
   } catch (error) {
-    console.error('Failed to load politician', error);
+    console.error('Failed to load congress member', error);
     clearProfile();
     showStatus('No data yet', 'Unable to reach the server. Please try again later.');
     renderRawPayload({ error: error?.message || 'unknown' });
@@ -257,7 +257,7 @@ const toggleFollow = async () => {
   elements.followBtn.classList.add('btn--loading');
   try {
     if (isFollowing) {
-      const params = new URLSearchParams({ politician: name });
+      const params = new URLSearchParams({ congress: name });
       const res = await fetch(`/api/follows?${params.toString()}`, { method: 'DELETE' });
       if (!res.ok && res.status !== 204) throw new Error('unfollowFailed');
       followedKeys.delete(key);
@@ -265,7 +265,7 @@ const toggleFollow = async () => {
       const res = await fetch('/api/follows', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ politician: name }),
+        body: JSON.stringify({ congress: name }),
       });
       if (!res.ok) throw new Error('followFailed');
       followedKeys.add(key);
@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const params = new URLSearchParams(window.location.search);
-  const initial = params.get('politician');
+  const initial = params.get('congress');
   if (initial && elements.input) {
     elements.input.value = initial;
     loadPolitician(initial);
