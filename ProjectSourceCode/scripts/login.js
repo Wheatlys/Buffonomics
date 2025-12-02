@@ -256,7 +256,6 @@ document.addEventListener('DOMContentLoaded', () => {
       'BUFFONOMICS',
       'TRANSPARENT',
       'DATA DRIVEN',
-      'PORTFOLIOS',
     ];
 
     // Ensure container has a sizer for width; create one if HTML doesn't have it

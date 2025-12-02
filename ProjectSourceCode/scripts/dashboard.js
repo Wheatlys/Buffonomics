@@ -384,23 +384,15 @@ document.addEventListener('DOMContentLoaded', () => {
       ticker.className = 'stock-row__ticker';
       ticker.textContent = item.name || item.queryKey || '—';
 
-      const change = document.createElement('div');
-      change.className = 'stock-row__change';
-      const sentimentLower = (item.latestTransaction || '').toLowerCase();
-      const isSell = sentimentLower.includes('sale') || sentimentLower.includes('sell');
-      change.classList.add(isSell ? 'is-negative' : 'is-positive');
-      change.textContent = item.latestTicker || (isSell ? 'Sale' : 'Purchase');
-
       const summary = document.createElement('p');
       summary.className = 'stock-row__summary';
-      summary.textContent = item.role || 'Recent trading activity';
+      summary.textContent = item.role || '—';
 
       const meta = document.createElement('div');
       meta.className = 'stock-row__meta';
-      const dateLabel = item.lastTraded ? formatDate(item.lastTraded) : 'Recent';
-      meta.innerHTML = `<span>${item.party || ''}</span><span>${dateLabel} • ${item.latestTicker || ''}</span>`;
+      meta.innerHTML = `<span>${item.party || 'Party unknown'}</span><span></span>`;
 
-      li.append(ticker, change, summary, meta);
+      li.append(ticker, summary, meta);
       stocksList.appendChild(li);
     });
   };

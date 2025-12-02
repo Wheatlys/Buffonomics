@@ -61,10 +61,10 @@ body {
   position: sticky;
   top: 0;
   z-index: 10;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
   align-items: center;
-  gap: 24px;
+  justify-content: space-between;
+  gap: 16px;
   padding: 24px clamp(18px, 5vw, 48px);
   background: rgba(6, 7, 8, 0.86);
   backdrop-filter: blur(20px);
@@ -131,6 +131,8 @@ body {
   gap: 14px;
   font-size: 13px;
   flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-left: auto;
 }
 
 .ghost-btn {
