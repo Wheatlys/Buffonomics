@@ -5,9 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const logoutBtn = document.getElementById('dashboardLogout');
   const stocksList = document.querySelector('.stocks-list');
   const stocksStatus = document.querySelector('.stocks-status');
-  const politicianGrid = document.querySelector('[data-politicians-grid]');
-  const politicianStatus = document.querySelector('[data-politicians-status]');
-  const politicianRefresh = document.querySelector('[data-politicians-refresh]');
+  const congressGrid = document.querySelector('[data-congress-grid]');
+  const congressStatus = document.querySelector('[data-congress-status]');
+  const congressRefresh = document.querySelector('[data-congress-refresh]');
   const searchForm = document.getElementById('memberSearch');
   const searchInput = document.getElementById('memberSearchInput');
   const searchStatus = document.querySelector('[data-search-status]');
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const li = document.createElement('li');
       const link = document.createElement('a');
       link.className = 'search-result';
-      link.href = `/politician?politician=${encodeURIComponent(item.name)}`;
+      link.href = `/congress?congress=${encodeURIComponent(item.name)}`;
       link.setAttribute('aria-label', `View profile for ${item.name}`);
 
       const avatar = document.createElement('div');
@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const performSearch = async (query) => {
     if (!searchResults || !searchStatus) return;
     if (!query || query.length < 2) {
-      updateSearchStatus('Start typing a name…');
+      updateSearchStatus('Start typing a Congress member name…');
       searchResults.innerHTML = '';
       return;
     }
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSearchStatus('Searching…');
     try {
       const params = new URLSearchParams({ q: query });
-      const response = await fetch(`/api/politicians/search?${params.toString()}`, {
+      const response = await fetch(`/api/congress/search?${params.toString()}`, {
         headers: { Accept: 'application/json' },
       });
       if (!response.ok) throw new Error('searchFailed');
@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
     event.preventDefault();
     const query = (searchInput?.value || '').trim();
     if (!query) {
-      updateSearchStatus('Enter a name to search.');
+      updateSearchStatus('Enter a Congress member name to search.');
       return;
     }
 
@@ -172,15 +172,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const params = new URLSearchParams({ name: query });
-      const response = await fetch(`/api/politicians?${params.toString()}`, {
+      const response = await fetch(`/api/congress?${params.toString()}`, {
         headers: { Accept: 'application/json' },
       });
       if (!response.ok) {
         throw new Error('notFound');
       }
       const payload = await response.json();
-      const targetName = payload?.politician?.name || query;
-      window.location.href = `/politician?politician=${encodeURIComponent(targetName)}`;
+      const targetName = payload?.congress?.name || query;
+      window.location.href = `/congress?congress=${encodeURIComponent(targetName)}`;
     } catch (error) {
       console.error('Search failed:', error);
       updateSearchStatus('No results found. Try another name.');
@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
     button.dataset.loading = 'true';
     try {
       if (isFollowing) {
-        const params = new URLSearchParams({ politician: name });
+        const params = new URLSearchParams({ congress: name });
         const res = await fetch(`/api/follows?${params.toString()}`, { method: 'DELETE' });
         if (!res.ok && res.status !== 204) throw new Error('unfollowFailed');
         followedKeys.delete(key);
@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch('/api/follows', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({ politician: name }),
+          body: JSON.stringify({ congress: name }),
         });
         if (!res.ok) throw new Error('followFailed');
         followedKeys.add(key);
@@ -242,27 +242,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  const renderPoliticians = (items = []) => {
-    if (!politicianGrid || !politicianStatus) return;
+  const renderCongressMembers = (items = []) => {
+    if (!congressGrid || !congressStatus) return;
 
-    politicianGrid.innerHTML = '';
+    congressGrid.innerHTML = '';
     if (!items.length) {
-      politicianStatus.textContent = 'No recent politician trades available.';
+      congressStatus.textContent = 'No recent congressional trades available.';
       return;
     }
 
-    politicianStatus.textContent = '';
+    congressStatus.textContent = '';
     items.forEach((item) => {
       const roleLabel = [item.role, item.chamber].filter(Boolean).join(' · ') || 'Member';
-      const card = document.createElement('div');
-      card.className = 'politician-card';
+      const card = document.createElement('article');
+      card.className = 'congress-card';
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('role', 'button');
       card.setAttribute('aria-label', `View profile for ${item.name}`);
       card.addEventListener('click', () => {
-        window.location.href = `/politician?politician=${encodeURIComponent(item.name)}`;
+        window.location.href = `/congress?congress=${encodeURIComponent(item.name)}`;
+      });
+      card.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          window.location.href = `/congress?congress=${encodeURIComponent(item.name)}`;
+        }
       });
 
       const roleLine = document.createElement('div');
-      roleLine.className = 'politician-card__role';
+      roleLine.className = 'congress-card__role';
       const sentimentLabel = item.latestTransaction || 'Trade';
       const sentimentLower = sentimentLabel.toLowerCase();
       const sentimentClass = sentimentLower.includes('sale')
@@ -281,15 +288,15 @@ document.addEventListener('DOMContentLoaded', () => {
       roleLine.append(roleText, sentimentChip);
 
       const name = document.createElement('h3');
-      name.className = 'politician-card__name';
+      name.className = 'congress-card__name';
       name.textContent = item.name || '—';
 
       const summary = document.createElement('p');
-      summary.className = 'politician-card__summary';
+      summary.className = 'congress-card__summary';
       summary.textContent = item.summary || 'Recent trading activity.';
 
       const tags = document.createElement('div');
-      tags.className = 'politician-card__tags';
+      tags.className = 'congress-card__tags';
       if (Array.isArray(item.topTickers) && item.topTickers.length) {
         item.topTickers.forEach((ticker) => {
           const tag = document.createElement('span');
@@ -305,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const footer = document.createElement('div');
-      footer.className = 'politician-card__footer';
+      footer.className = 'congress-card__footer';
       const date = document.createElement('span');
       date.textContent = `Last trade: ${item.formattedDate || formatDate(item.lastActivity)}`;
 
@@ -329,33 +336,33 @@ document.addEventListener('DOMContentLoaded', () => {
       footer.append(date, amount, followBtn);
 
       card.append(roleLine, name, summary, tags, footer);
-      politicianGrid.appendChild(card);
+      congressGrid.appendChild(card);
     });
   };
 
-  const fetchPoliticians = async () => {
-    if (!politicianGrid || !politicianStatus) return;
+  const fetchCongressMembers = async () => {
+    if (!congressGrid || !congressStatus) return;
 
-    politicianStatus.textContent = 'Fetching latest highlights…';
-    politicianRefresh?.setAttribute('disabled', 'true');
+    congressStatus.textContent = 'Fetching latest highlights…';
+    congressRefresh?.setAttribute('disabled', 'true');
 
     try {
-      const response = await fetch('/api/politicians/highlights');
+      const response = await fetch('/api/congress/highlights');
       if (!response.ok) {
         throw new Error('Bad response');
       }
       const payload = await response.json();
-      renderPoliticians(payload.items || []);
+      renderCongressMembers(payload.items || []);
     } catch (error) {
-      console.error('Unable to load politician highlights:', error);
-      politicianStatus.textContent = 'Unable to load highlights right now.';
-      politicianGrid.innerHTML = '';
+      console.error('Unable to load congressional highlights:', error);
+      congressStatus.textContent = 'Unable to load highlights right now.';
+      congressGrid.innerHTML = '';
     } finally {
-      politicianRefresh?.removeAttribute('disabled');
+      congressRefresh?.removeAttribute('disabled');
     }
   };
 
-  politicianRefresh?.addEventListener('click', () => fetchPoliticians());
+  congressRefresh?.addEventListener('click', () => fetchCongressMembers());
 
   const renderFollows = (items = []) => {
     if (!stocksList || !stocksStatus) {
@@ -364,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     stocksList.innerHTML = '';
     if (!items.length) {
-      stocksStatus.textContent = 'You are not following any politicians yet.';
+      stocksStatus.textContent = 'You are not following any Congress members yet.';
       return;
     }
 
@@ -421,7 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const bootstrap = async () => {
     await fetchFollows();
-    await fetchPoliticians();
+    await fetchCongressMembers();
   };
 
   bootstrap();
