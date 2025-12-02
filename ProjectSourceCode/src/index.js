@@ -8,6 +8,8 @@ const pgp = require('pg-promise')();
 const { fetchExternalCongressMember, normalizeQuery } = require('./services/congress');
 const axios = require('axios');
 
+const normalizeFollowKey = (value = '') => normalizeQuery(value).replace(/[^a-z0-9]/g, '');
+
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const useMemoryDb = process.env.USE_MEMORY_DB === 'true'
@@ -482,7 +484,11 @@ const ensureCongressTablesPromise = ensureCongressTables();
 
 const loadCongressMemberForFollow = async (queryValue) => {
   const normalized = normalizeQuery(queryValue || '');
-  if (!normalized) {
+  const canonical = normalizeFollowKey(queryValue || '');
+  const candidateKeys = Array.from(
+    new Set([normalized, canonical].filter(Boolean)),
+  );
+  if (!candidateKeys.length) {
     const error = new Error('missingQuery');
     error.status = 400;
     throw error;
@@ -490,27 +496,52 @@ const loadCongressMemberForFollow = async (queryValue) => {
 
   await ensureCongressTablesPromise;
 
-  let cached = await congressRepo.getByQueryKey(normalized);
-  try {
-    const fresh = await fetchExternalCongressMember(queryValue);
-    if (fresh) {
-      const persisted = await congressRepo.upsert(normalized, fresh);
-      return persisted;
+  let cached = null;
+  let selectedKey = candidateKeys[0];
+  // Prefer any existing record under either normalized or canonical key
+  // eslint-disable-next-line no-restricted-syntax
+  for (const key of candidateKeys) {
+    const match = await congressRepo.getByQueryKey(key);
+    if (match) {
+      cached = match;
+      selectedKey = key;
+      break;
     }
-  } catch (error) {
-    if (cached) {
-      return cached;
-    }
-    throw error;
   }
-
   if (cached) {
     return cached;
   }
 
-  const error = new Error('notFound');
-  error.status = 404;
-  throw error;
+  // Upsert a lightweight placeholder immediately to keep follow snappy
+  const placeholder = {
+    queryKey: selectedKey,
+    name: queryValue || selectedKey,
+    party: null,
+    position: null,
+    netWorth: null,
+    tradeVolume: null,
+    totalTrades: 0,
+    lastTraded: null,
+    yearsActive: null,
+    currentMember: null,
+    avatarUrl: null,
+    trades: [],
+  };
+  const persisted = await congressRepo.upsert(selectedKey, placeholder);
+
+  // Try to enrich in the background without blocking the response
+  fetchExternalCongressMember(queryValue)
+    .then((fresh) => {
+      if (fresh) {
+        return congressRepo.upsert(selectedKey, fresh);
+      }
+      return null;
+    })
+    .catch((error) => {
+      console.error('Background enrich failed for follow:', error?.message || error);
+    });
+
+  return persisted;
 };
 
 const app = express();
@@ -830,7 +861,17 @@ app.get('/api/follows', requireAuth, async (req, res) => {
   try {
     await ensureCongressTablesPromise;
     const rows = await followsRepo.list(req.session.user.email);
-    const items = await Promise.all((rows || []).map(async (row) => {
+    const deduped = [];
+    const seen = new Set();
+    (rows || []).forEach((row) => {
+      const queryKey = row.query_key || row.politician_query_key || row;
+      const canonicalKey = normalizeFollowKey(queryKey || '');
+      if (seen.has(canonicalKey || queryKey)) return;
+      seen.add(canonicalKey || queryKey);
+      deduped.push(row);
+    });
+
+    const items = await Promise.all((deduped || []).map(async (row) => {
       const queryKey = row.query_key || row.politician_query_key || row;
       const cached = await congressRepo.getByQueryKey(queryKey);
       if (cached) {
@@ -855,15 +896,16 @@ app.get('/api/follows', requireAuth, async (req, res) => {
 
 app.post('/api/follows', requireAuth, async (req, res) => {
   const rawQuery = (req.body.congress || req.body.politician || req.body.query || req.body.name || '').trim();
-  const normalized = normalizeQuery(rawQuery);
-  if (!normalized) {
+  const canonical = normalizeFollowKey(rawQuery);
+  if (!canonical) {
     return res.status(400).json({ error: 'missingCongressMember' });
   }
 
   try {
     const persisted = await loadCongressMemberForFollow(rawQuery);
-    await followsRepo.follow(req.session.user.email, normalized);
-    const item = buildFollowEntry(persisted.record, persisted.trades, normalized);
+    const followKey = persisted?.record?.query_key || canonical;
+    await followsRepo.follow(req.session.user.email, followKey);
+    const item = buildFollowEntry(persisted.record, persisted.trades, followKey);
     return res.status(201).json({ item });
   } catch (error) {
     console.error('Failed to follow:', error);
@@ -886,12 +928,16 @@ app.delete('/api/follows', requireAuth, async (req, res) => {
     || req.body?.politician
     || '').trim();
   const normalized = normalizeQuery(rawQuery);
-  if (!normalized) {
+  const canonical = normalizeFollowKey(rawQuery);
+  const candidateKeys = Array.from(
+    new Set([normalized, canonical].filter(Boolean)),
+  );
+  if (!candidateKeys.length) {
     return res.status(400).json({ error: 'missingCongressMember' });
   }
 
   try {
-    await followsRepo.unfollow(req.session.user.email, normalized);
+    await Promise.all(candidateKeys.map((key) => followsRepo.unfollow(req.session.user.email, key)));
     return res.status(204).end();
   } catch (error) {
     console.error('Failed to unfollow:', error);

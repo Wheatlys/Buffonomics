@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchStatus = document.querySelector('[data-search-status]');
   const searchDropdown = document.querySelector('[data-search-dropdown]');
   const searchResults = document.querySelector('[data-search-results]');
-  const normalizeKey = (value = '') => value.trim().toLowerCase();
+  const normalizeKey = (value = '') => value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
   let followedKeys = new Set();
 
   const currencyFormatter = new Intl.NumberFormat('en-US', {

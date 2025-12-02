@@ -120,14 +120,15 @@ void main() {
 
   const createThreadsBackground = () => {
     const container = document.getElementById('threadsBackground');
-    if (!container) return;
+    const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!container || container.dataset.disable === 'true' || prefersReducedMotion) return;
 
     const amplitude = Number(container.dataset.amplitude || 2.6);
     const distance = Number(container.dataset.distance || 10);
     const enableMouse = false;
 
     const resolutionVec = new Float32Array([1, 1, 1]);
-    const renderer = new Renderer({ alpha: true, dpr: Math.min(window.devicePixelRatio || 1, 2) });
+    const renderer = new Renderer({ alpha: true, dpr: 1 });
     const { gl } = renderer;
     gl.clearColor(0, 0, 0, 0);
     gl.enable(gl.BLEND);
