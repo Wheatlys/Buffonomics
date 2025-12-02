@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchStatus = document.querySelector('[data-search-status]');
   const searchDropdown = document.querySelector('[data-search-dropdown]');
   const searchResults = document.querySelector('[data-search-results]');
-  const normalizeKey = (value = '') => value.trim().toLowerCase();
+  const normalizeKey = (value = '') => value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
   let followedKeys = new Set();
 
   const currencyFormatter = new Intl.NumberFormat('en-US', {
@@ -254,18 +254,11 @@ document.addEventListener('DOMContentLoaded', () => {
     politicianStatus.textContent = '';
     items.forEach((item) => {
       const roleLabel = [item.role, item.chamber].filter(Boolean).join(' · ') || 'Member';
-      const card = document.createElement('article');
+      const card = document.createElement('div');
       card.className = 'politician-card';
-      card.setAttribute('tabindex', '0');
-      card.setAttribute('role', 'button');
       card.setAttribute('aria-label', `View profile for ${item.name}`);
       card.addEventListener('click', () => {
         window.location.href = `/politician?politician=${encodeURIComponent(item.name)}`;
-      });
-      card.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          window.location.href = `/politician?politician=${encodeURIComponent(item.name)}`;
-        }
       });
 
       const roleLine = document.createElement('div');

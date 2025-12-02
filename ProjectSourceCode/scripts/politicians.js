@@ -7,7 +7,7 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
 });
 
 const numberFormatter = new Intl.NumberFormat('en-US');
-const normalizeKey = (value = '') => value.trim().toLowerCase();
+const normalizeKey = (value = '') => value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 let followedKeys = new Set();
 
 const HERO_DEFAULT_TITLE = 'No data yet';
