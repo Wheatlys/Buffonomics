@@ -26,6 +26,154 @@ body {
   color: var(--text);
 }
 
+.shell-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px clamp(18px, 5vw, 48px);
+  background: rgba(6, 7, 8, 0.86);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.brand {
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 0.4px;
+  font-family: 'SFMono-Regular', ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text);
+  text-shadow: 0 0 6px rgba(255, 208, 64, 0.45);
+}
+
+.brand__caret {
+  color: var(--accent);
+  animation: blink 0.95s steps(1, end) infinite;
+}
+
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.brand--link {
+  text-decoration: none;
+}
+
+.shell-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.ghost-btn {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: var(--text);
+  padding: 8px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: border-color 0.2s ease, transform 0.1s ease;
+}
+
+.ghost-btn:hover { border-color: var(--accent); }
+.ghost-btn:active { transform: translateY(1px); }
+
+.search-container { position: relative; display: inline-block; }
+
+.shell-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.shell-search input {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  min-width: 240px;
+  font-size: 13px;
+  outline: none;
+}
+
+.shell-search input::placeholder { color: var(--muted); }
+
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: min(440px, 90vw);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(10, 12, 15, 0.94);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  padding: 10px 10px 12px;
+  display: none;
+  z-index: 20;
+}
+
+.search-dropdown.is-open { display: block; }
+
+.search-dropdown__body { padding-top: 4px; }
+.search-status {
+  min-height: 16px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.search-results {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.search-result {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text);
+  transition: background 0.12s ease, transform 0.12s ease;
+}
+
+.search-result:hover { background: rgba(255, 255, 255, 0.04); transform: translateY(-1px); }
+.search-result__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 208, 64, 0.32), rgba(176, 124, 16, 0.38));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #0b0d10;
+  overflow: hidden;
+}
+.search-result__avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.search-result__name { margin: 0; font-size: 15px; color: #ffe8a6; }
+.search-result__meta { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+
 .shell {
   padding: 2.5rem clamp(1rem, 4vw, 4rem) 3rem;
   display: flex;
@@ -440,6 +588,40 @@ body {
 
 .trades__table tbody tr:last-child td {
   border-bottom: none;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.pagination button {
+  background: transparent;
+  border: none;
+  color: #9cc2ff;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.pagination button:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.pagination button[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pagination .is-active {
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: underline;
 }
 
 .stock-cell {
