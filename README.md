@@ -31,7 +31,7 @@ External APIs:
 ## Prerequisites to run the application
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - Modern web browser (Chrome, Edge, Firefox, Safari)
-- Quiver Quant
+- Quiver Quant API Key
 
 ## Instructions on running the application locally
 1. **Clone & enter the repo**
@@ -46,7 +46,6 @@ External APIs:
    POSTGRES_DB=users_db
    SESSION_SECRET=change-me
    QUIVER_API_KEY=your-quiver-key
-   ALPHAVANTAGE_API_KEY=your-alpha-key
    ```
 3. **Start the full stack with Docker Compose**
    ```bash
