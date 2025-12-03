@@ -27,12 +27,11 @@ Containerization:
 
 External APIs:
 - [Quiver Quant](https://api.quiverquant.com/docs/#/) – congressional trading history
-- [Alpha Vantage](https://www.alphavantage.co/documentation/) – daily market movers reference data
 
 ## Prerequisites to run the application
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - Modern web browser (Chrome, Edge, Firefox, Safari)
-- Quiver Quant + Alpha Vantage API keys (free tiers work for our needs)
+- Quiver Quant
 
 ## Instructions on running the application locally
 1. **Clone & enter the repo**
