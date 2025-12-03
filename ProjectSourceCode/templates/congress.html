@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Buffonomics · Congress Member Profile</title>
+
   <link rel="stylesheet" href="/static/css/congress.css" />
 </head>
 <body>
@@ -39,11 +40,14 @@
         <section class="stack-card profile" aria-live="polite">
           <p class="stack-card__eyebrow">Profile</p>
           <h2 class="stack-card__title">Trading Overview</h2>
+
           <div class="profile__identity">
             <p class="profile__name" id="congressName">—</p>
             <p class="profile__position" id="congressPosition">—</p>
             <p class="profile__party" id="congressParty">—</p>
-            <button type="button" class="profile__follow">Follow Trading Activity</button>
+            <button type="button" class="profile__follow">
+              Follow Trading Activity
+            </button>
           </div>
 
           <dl class="profile__stats">
@@ -65,7 +69,6 @@
             </div>
           </dl>
         </section>
-
       </aside>
 
       <section class="board">
@@ -74,25 +77,33 @@
             <p class="board__eyebrow">Trades</p>
             <h2 class="board__title">Transaction Ledger</h2>
           </div>
+
           <div class="board__totals">
-            <p><span id="tradeVolumeTotal">—</span><small>Trade Volume</small></p>
-            <p><span id="tradeCountTotal">—</span><small>Total Trades</small></p>
+            <p>
+              <span id="tradeVolumeTotal">—</span>
+              <small>Trade Volume</small>
+            </p>
+            <p>
+              <span id="tradeCountTotal">—</span>
+              <small>Total Trades</small>
+            </p>
           </div>
         </header>
 
         <table class="trades__table">
           <thead>
             <tr>
-              <th scope="col">Stock</th>
-              <th scope="col">Transaction</th>
-              <th scope="col">Filed</th>
-              <th scope="col">Traded</th>
-              <th scope="col">Range</th>
-              <th scope="col">Amount</th>
-              <th scope="col">Description</th>
-              <th scope="col">Excess Return</th>
+              <th>Stock</th>
+              <th>Transaction</th>
+              <th>Filed</th>
+              <th>Traded</th>
+              <th>Range</th>
+              <th>Amount</th>
+              <th>Description</th>
+              <th>Excess Return</th>
             </tr>
           </thead>
+
           <tbody id="tradesTableBody">
             <tr>
               <td colspan="8">Search for a Congress member to load trades…</td>
@@ -109,9 +120,14 @@
           <p class="debug__eyebrow">API Inspector</p>
           <h3 class="debug__title">Raw Response</h3>
         </div>
-        <p class="debug__hint">This shows the last payload returned by the API for comparison.</p>
+        <p class="debug__hint">
+          This shows the last payload returned by the API for comparison.
+        </p>
       </header>
-      <pre id="rawApiPayload" class="debug__pre" aria-live="polite">No data loaded yet.</pre>
+
+      <pre id="rawApiPayload" class="debug__pre" aria-live="polite">
+No data loaded yet.
+      </pre>
     </section>
   </div>
 

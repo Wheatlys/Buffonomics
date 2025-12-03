@@ -316,7 +316,7 @@ const formatTradeRecord = (trade) => ({
     : (trade.excessReturn !== undefined ? trade.excessReturn : null),
   priceChange: trade.price_change !== null && trade.price_change !== undefined
     ? Number(trade.price_change)
-    : (trade.priceChange !== undefined ? trade.priceChange : null),
+    : (trade.priceChange !== undefined ? tradePriceChange : null),
   spyChange: trade.spy_change !== null && trade.spy_change !== undefined
     ? Number(trade.spy_change)
     : (trade.spyChange !== undefined ? trade.spyChange : null),
@@ -1090,6 +1090,15 @@ app.get('/dashboard', requireAuth, (req, res) => {
 
 app.get('/congress', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, '../templates/congress.html'));
+});
+
+// ✅ NEW: routes for profile and settings
+app.get('/profile', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, '../templates/profile.html'));
+});
+
+app.get('/settings', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, '../templates/settings.html'));
 });
 
 app.get('/api/congress', requireAuth, async (req, res) => {
