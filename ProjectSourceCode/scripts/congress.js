@@ -9,6 +9,11 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
 const numberFormatter = new Intl.NumberFormat('en-US');
 const normalizeKey = (value = '') => value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 let followedKeys = new Set();
+const tradesState = {
+  items: [],
+  page: 1,
+  pageSize: 15,
+};
 
 const HERO_DEFAULT_TITLE = 'No data yet';
 const HERO_DEFAULT_SUB =
@@ -21,8 +26,10 @@ const formatPercent = (value) => {
 };
 
 const elements = {
-  form: document.getElementById('congressSearch'),
-  input: document.getElementById('searchInput'),
+  form: document.getElementById('congressSearch')
+    || document.getElementById('congressHeaderSearch'),
+  input: document.getElementById('searchInput')
+    || document.getElementById('congressHeaderSearchInput'),
   heroHeadline: document.getElementById('heroHeadline'),
   heroSubline: document.getElementById('heroSubline'),
   name: document.getElementById('congressName'),
@@ -35,6 +42,7 @@ const elements = {
   tradeVolumeTotal: document.getElementById('tradeVolumeTotal'),
   tradeCountTotal: document.getElementById('tradeCountTotal'),
   tradesTable: document.getElementById('tradesTableBody'),
+  tradesPagination: document.getElementById('tradesPagination'),
   rawPayload: document.getElementById('rawApiPayload'),
   followBtn: document.querySelector('.profile__follow'),
 };
@@ -93,6 +101,9 @@ const clearProfile = () => {
     elements.followBtn.textContent = 'Follow Trading Activity';
     elements.followBtn.setAttribute('aria-pressed', 'false');
   }
+  tradesState.items = [];
+  tradesState.page = 1;
+  renderTradesPage();
 };
 
 const renderTrades = (trades = []) => {
@@ -132,6 +143,46 @@ const renderTrades = (trades = []) => {
   }).join('');
 };
 
+const renderPagination = () => {
+  if (!elements.tradesPagination) return;
+  const totalPages = Math.max(1, Math.ceil((tradesState.items.length || 0) / tradesState.pageSize));
+  const currentPage = Math.min(tradesState.page, totalPages);
+  tradesState.page = currentPage;
+
+  const createBtn = (label, page, disabled = false, isActive = false) => {
+    const btn = document.createElement('button');
+    btn.textContent = label;
+    if (disabled) btn.disabled = true;
+    if (isActive) btn.classList.add('is-active');
+    btn.addEventListener('click', () => {
+      tradesState.page = page;
+      renderTradesPage();
+    });
+    return btn;
+  };
+
+  const fragment = document.createDocumentFragment();
+  fragment.appendChild(createBtn('Prev', Math.max(1, currentPage - 1), currentPage === 1));
+  for (let p = 1; p <= totalPages; p += 1) {
+    fragment.appendChild(createBtn(String(p), p, false, p === currentPage));
+  }
+  fragment.appendChild(createBtn('Next', Math.min(totalPages, currentPage + 1), currentPage === totalPages));
+
+  elements.tradesPagination.innerHTML = '';
+  elements.tradesPagination.appendChild(fragment);
+};
+
+const renderTradesPage = () => {
+  const { items, page, pageSize } = tradesState;
+  const totalPages = Math.max(1, Math.ceil((items.length || 0) / pageSize));
+  const current = Math.min(page, totalPages);
+  const start = (current - 1) * pageSize;
+  const end = start + pageSize;
+  const slice = items.slice(start, end);
+  renderTrades(slice);
+  renderPagination();
+};
+
 const renderProfile = (profile) => {
   if (!profile) {
     clearProfile();
@@ -168,7 +219,9 @@ const renderProfile = (profile) => {
 
   showStatus(`${profile.name}`, `${profile.position || ''} • ${profile.party || ''}`.trim());
   document.title = `Buffonomics · ${profile.name}`;
-  renderTrades(profile.trades);
+  tradesState.items = profile.trades || [];
+  tradesState.page = 1;
+  renderTradesPage();
   if (elements.followBtn) {
     const isFollowing = followedKeys.has(normalizeKey(profile.name || ''));
     elements.followBtn.classList.toggle('profile__follow--active', isFollowing);
@@ -299,8 +352,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const params = new URLSearchParams(window.location.search);
   const initial = params.get('congress');
-  if (initial && elements.input) {
-    elements.input.value = initial;
+  if (initial) {
+    if (elements.input) elements.input.value = initial;
     loadCongressMember(initial);
   } else {
     clearProfile();

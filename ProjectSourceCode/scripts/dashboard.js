@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchStatus = document.querySelector('[data-search-status]');
   const searchDropdown = document.querySelector('[data-search-dropdown]');
   const searchResults = document.querySelector('[data-search-results]');
+  let followItems = [];
   const normalizeKey = (value = '') => value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
   let followedKeys = new Set();
 
@@ -205,6 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const updateFollowButton = (btn, name) => {
     const key = normalizeKey(name);
     const isFollowing = followedKeys.has(key);
+    btn.dataset.following = isFollowing ? 'true' : 'false';
     btn.textContent = isFollowing ? 'Following' : 'Follow';
     btn.classList.toggle('btn--following', isFollowing);
     btn.setAttribute('aria-pressed', isFollowing ? 'true' : 'false');
@@ -222,6 +224,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch(`/api/follows?${params.toString()}`, { method: 'DELETE' });
         if (!res.ok && res.status !== 204) throw new Error('unfollowFailed');
         followedKeys.delete(key);
+        followItems = followItems.filter(
+          (entry) => normalizeKey(entry.queryKey || entry.name) !== key,
+        );
       } else {
         const res = await fetch('/api/follows', {
           method: 'POST',
@@ -230,9 +235,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         if (!res.ok) throw new Error('followFailed');
         followedKeys.add(key);
+        const payload = await res.json().catch(() => ({}));
+        const newItem = payload?.item;
+        if (newItem) {
+          followItems = [
+            newItem,
+            ...followItems.filter(
+              (entry) => normalizeKey(entry.queryKey || entry.name) !== key,
+            ),
+          ];
+        }
       }
       updateFollowButton(button, name);
-      await fetchFollows();
+      renderFollows(followItems);
+      if (!followItems.length) {
+        await fetchFollows();
+      }
     } catch (error) {
       console.error('Follow toggle failed:', error);
       alert('Unable to update following right now.');
@@ -364,7 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   congressRefresh?.addEventListener('click', () => fetchCongressMembers());
 
-  const renderFollows = (items = []) => {
+  const renderFollows = (items = followItems) => {
     if (!stocksList || !stocksStatus) {
       return;
     }
@@ -379,6 +397,22 @@ document.addEventListener('DOMContentLoaded', () => {
     items.forEach((item) => {
       const li = document.createElement('li');
       li.className = 'stock-row';
+      li.setAttribute('role', 'button');
+      li.setAttribute('tabindex', '0');
+      li.addEventListener('click', () => {
+        const name = item.name || item.queryKey;
+        if (name) {
+          window.location.href = `/congress?congress=${encodeURIComponent(name)}`;
+        }
+      });
+      li.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+          const name = item.name || item.queryKey;
+          if (name) {
+            window.location.href = `/congress?congress=${encodeURIComponent(name)}`;
+          }
+        }
+      });
 
       const ticker = document.createElement('div');
       ticker.className = 'stock-row__ticker';
@@ -392,7 +426,29 @@ document.addEventListener('DOMContentLoaded', () => {
       meta.className = 'stock-row__meta';
       meta.innerHTML = `<span>${item.party || 'Party unknown'}</span><span></span>`;
 
-      li.append(ticker, summary, meta);
+      const followBtn = document.createElement('button');
+      followBtn.type = 'button';
+      followBtn.className = 'follow-btn';
+      updateFollowButton(followBtn, item.name || item.queryKey);
+      followBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        toggleFollow(item.name || item.queryKey, followBtn);
+      });
+      followBtn.addEventListener('mouseenter', () => {
+        if (followBtn.dataset.following === 'true') {
+          followBtn.textContent = 'Unfollow';
+        }
+      });
+      followBtn.addEventListener('mouseleave', () => {
+        const name = item.name || item.queryKey;
+        updateFollowButton(followBtn, name);
+      });
+
+      const headerRow = document.createElement('div');
+      headerRow.className = 'follow-row__header';
+      headerRow.append(ticker, followBtn);
+
+      li.append(headerRow, summary, meta);
       stocksList.appendChild(li);
     });
   };
@@ -411,7 +467,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const payload = await response.json();
       const keys = (payload.items || []).map((item) => normalizeKey(item.queryKey || item.name));
       followedKeys = new Set(keys);
-      renderFollows(payload.items || []);
+      followItems = payload.items || [];
+      renderFollows();
     } catch (error) {
       console.error('Unable to load following list:', error);
       stocksStatus.textContent = 'Unable to load following list right now.';

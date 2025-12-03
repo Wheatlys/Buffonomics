@@ -76,7 +76,7 @@ body {
 }
 
 .ghost-btn {
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   background: transparent;
   color: var(--text);
   padding: 8px 16px;
@@ -588,6 +588,40 @@ body {
 
 .trades__table tbody tr:last-child td {
   border-bottom: none;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.pagination button {
+  background: transparent;
+  border: none;
+  color: #9cc2ff;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.pagination button:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.pagination button[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pagination .is-active {
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: underline;
 }
 
 .stock-cell {
