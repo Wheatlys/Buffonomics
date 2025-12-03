@@ -36,6 +36,17 @@ const lowerBoundFromRange = (value = '') => {
   return Number.isFinite(min) ? min : null;
 };
 
+const matchesQueryTokens = (record = {}, tokens = []) => {
+  if (!tokens.length) return true;
+  const rawName = record.Representative
+    || record.Politician
+    || record.Name
+    || [record.FirstName, record.LastName].filter(Boolean).join(' ');
+  const recordTokens = tokenizeName(rawName);
+  return recordTokens.length
+    && tokens.every((token) => recordTokens.includes(token));
+};
+
 const normalizeDate = (value) => {
   if (!value) return null;
   if (typeof value === 'string' && value.includes('T')) {
@@ -209,12 +220,15 @@ const fiveYearsAgo = () => {
   return date.toISOString().split('T')[0];
 };
 
-const fetchDataset = async (path, apiKey, query) => {
+const fetchDataset = async (path, apiKey, query, options = {}) => {
   if (!path) return [];
   const aggregated = [];
   let page = 1;
   const isCongress = /congresstrading/i.test(path);
   const pageSize = Number(process.env.QUIVER_PAGE_SIZE || 500);
+  const disableFilter = options.disableFilter === true;
+  const filterTokens = Array.isArray(options.filterTokens) ? options.filterTokens : [];
+  const maxRecords = options.maxRecords || null;
 
   try {
     // eslint-disable-next-line no-constant-condition
@@ -228,7 +242,9 @@ const fetchDataset = async (path, apiKey, query) => {
         params.representative = query;
       }
       if (isCongress) {
-        params.representative = query;
+        if (!disableFilter) {
+          params.representative = query;
+        }
         params.normalized = true;
         params.version = 'V2';
         params.nonstock = false;
@@ -251,7 +267,15 @@ const fetchDataset = async (path, apiKey, query) => {
           ? response.data.data
           : [];
 
-      aggregated.push(...data.map((item) => ({ ...item, __source: path })));
+      const filtered = filterTokens.length
+        ? data.filter((item) => matchesQueryTokens(item, filterTokens))
+        : data;
+
+      aggregated.push(...filtered.map((item) => ({ ...item, __source: path })));
+
+      if (maxRecords && aggregated.length >= maxRecords) {
+        break;
+      }
 
       if (!isCongress || data.length < pageSize) {
         break;
@@ -362,6 +386,22 @@ const fetchQuiverCongressMember = async (query) => {
     const data = await fetchDataset(endpoint, apiKey, query);
     if (data.length) {
       aggregated = aggregated.concat(data);
+    }
+  }
+
+  // Fallback: aggressively fetch unfiltered congresstrading data and filter locally
+  if (aggregated.length < 200) {
+    for (const endpoint of endpoints) {
+      if (!/congresstrading/i.test(endpoint)) continue;
+      // eslint-disable-next-line no-await-in-loop
+      const extra = await fetchDataset(endpoint, apiKey, query, {
+        disableFilter: true,
+        filterTokens: queryTokens,
+        maxRecords: 1200,
+      });
+      if (extra.length) {
+        aggregated = aggregated.concat(extra);
+      }
     }
   }
 
