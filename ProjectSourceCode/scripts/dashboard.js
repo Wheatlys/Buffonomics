@@ -53,6 +53,11 @@ document.addEventListener('DOMContentLoaded', () => {
   logoutBtn?.addEventListener('click', async () => {
     logoutBtn.disabled = true;
     logoutBtn.dataset.loading = 'true';
+    try {
+      sessionStorage.removeItem('buffonomicsWelcomeSeen');
+    } catch (e) {
+      /* ignore */
+    }
 
     try {
       const res = await fetch('/api/logout', { method: 'POST' });

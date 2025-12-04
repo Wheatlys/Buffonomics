@@ -13,6 +13,16 @@
        data-amplitude="2" data-distance="0.9" data-interactive="false" data-disable="true"></div>
   <div class="noise" aria-hidden="true"></div>
 
+  <div class="welcome-overlay" data-welcome-overlay hidden>
+    <div class="welcome-copy">
+      <p class="welcome-kicker">Welcome to</p>
+      <h1 class="welcome-headline">
+        <span data-text-type></span><span class="text-type__cursor" data-text-cursor>|</span>
+      </h1>
+      <p class="welcome-sub">Loading your dashboard…</p>
+    </div>
+  </div>
+
   <header class="shell-header">
     <div class="brand-home">
       <a class="brand brand--link" href="/dashboard" aria-label="Back to dashboard">
@@ -90,6 +100,7 @@
   </main>
 
   <script type="module" src="/scripts/dashboard-bg.js"></script>
+  <script src="/scripts/welcome-modal.js" defer></script>
   <script src="/scripts/dashboard.js" defer></script>
 </body>
 </html>
