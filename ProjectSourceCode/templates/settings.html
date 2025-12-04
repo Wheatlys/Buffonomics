@@ -2,74 +2,91 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <title>Buffonomics · Settings</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark" />
-  <title>Buffonomics · Settings</title>
 
-  <!-- Reuse LED theme + settings-specific styles -->
-  <link rel="stylesheet" href="../static/css/login.css" />
-  <link rel="stylesheet" href="../static/css/settings.css" />
+  <!-- Base Buffonomics theme + fonts -->
+  <link rel="stylesheet" href="/static/css/login.css" />
+  <!-- Dashboard header styles (brand, ghost-btn, shell-header, etc.) -->
+  <link rel="stylesheet" href="/static/css/dashboard.css" />
+  <!-- Page-specific layout for the settings card -->
+  <link rel="stylesheet" href="/static/css/settings.css" />
 </head>
-<body>
-  <!-- Black canvas background -->
-  <div class="bg" aria-hidden="true">
-    <canvas id="ledBackdrop" class="led-canvas"></canvas>
-    <div class="led-scan"></div>
-  </div>
 
-  <div class="settings-shell">
-    <!-- Top bar -->
-    <header class="settings-topbar">
-      <div class="settings-topbar__inner">
-        <div class="brand">
-          <span class="brand__text">Buffonomics</span><span class="brand__caret">▌</span>
+<body>
+  <!-- HEADER (same structure as dashboard, but no search/settings button) -->
+  <header class="shell-header">
+    <a class="brand brand--link" href="/dashboard" aria-label="Back to dashboard">
+      <span class="brand__text">Buffonomics</span>
+      <span class="brand__caret">▌</span>
+    </a>
+
+    <div class="shell-meta">
+      <a class="ghost-btn" href="/logout">Logout</a>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="settings-wrapper">
+    <section class="settings-card">
+
+      <header class="settings-header">
+        <div class="settings-eyebrow">ACCOUNT</div>
+        <h1>Settings</h1>
+        <a class="back-link" href="/dashboard">← Back to feed</a>
+      </header>
+
+      <!-- EMAIL SECTION -->
+      <section class="settings-section">
+        <h2>Account Email</h2>
+        <p class="settings-help">
+          View your current email and update it if needed. You’ll use this email to sign in.
+        </p>
+
+        <div class="form-group">
+          <label>Current email</label>
+          <input id="currentEmail" type="email" disabled />
         </div>
 
-        <!-- ✅ Text stays "Back to feed", route goes to /dashboard -->
-        <a href="/dashboard" class="back-link">← Back to feed</a>
-      </div>
-    </header>
+        <div class="form-group">
+          <label>New email</label>
+          <input id="newEmail" type="email" placeholder="Enter new email" />
+        </div>
 
-    <!-- Settings card -->
-    <main class="settings-main">
-      <section class="settings-card">
-        <h1 class="settings-title">User Settings</h1>
-        <p class="settings-subtitle">Update how you appear in Buffonomics.</p>
+        <div class="form-group">
+          <label>Current password</label>
+          <input id="emailPassword" type="password" placeholder="Enter current password" />
+        </div>
 
-        <form id="settingsForm" autocomplete="off">
-          <!-- Account section -->
-          <h2 class="section-heading">Account</h2>
-          <div class="field">
-            <label for="displayName">Display name</label>
-            <input type="text" id="displayName" name="displayName" placeholder="Buffonomics User" />
-          </div>
-
-          <div class="field">
-            <label for="handle">Handle</label>
-            <div class="handle-wrap">
-              <span class="handle-prefix">@</span>
-              <input type="text" id="handle" name="handle" placeholder="you" />
-            </div>
-            <p class="field-help">This is how your name appears on cards and in comments.</p>
-          </div>
-
-          <div class="field">
-            <label for="email">Email (optional)</label>
-            <input type="email" id="email" name="email" placeholder="you@example.com" />
-          </div>
-
-          <!-- Actions -->
-          <div class="actions">
-            <button type="submit" class="btn primary">Save changes</button>
-            <button type="button" id="resetSettings" class="btn ghost">Reset to defaults</button>
-          </div>
-
-          <p id="saveStatus" class="save-status" role="status" aria-live="polite"></p>
-        </form>
+        <button id="updateEmailBtn" class="primary-btn">Update email</button>
       </section>
-    </main>
-  </div>
 
-  <script src="../scripts/settings.js" defer></script>
+      <div class="divider"></div>
+
+      <!-- PASSWORD SECTION -->
+      <section class="settings-section">
+        <h2>Change Password</h2>
+        <p class="settings-help">
+          Use a strong password that you haven’t used elsewhere.
+        </p>
+
+        <div class="form-group">
+          <label>Current password</label>
+          <input id="currentPassword" type="password" placeholder="Current password" />
+        </div>
+
+        <div class="form-group">
+          <label>New password</label>
+          <input id="newPassword" type="password" placeholder="New password" />
+        </div>
+
+        <button id="changePasswordBtn" class="primary-btn">Update password</button>
+      </section>
+
+    </section>
+  </main>
+
+  <script src="/scripts/settings.js" defer></script>
 </body>
 </html>

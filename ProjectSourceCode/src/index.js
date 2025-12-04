@@ -316,7 +316,7 @@ const formatTradeRecord = (trade) => ({
     : (trade.excessReturn !== undefined ? trade.excessReturn : null),
   priceChange: trade.price_change !== null && trade.price_change !== undefined
     ? Number(trade.price_change)
-    : (trade.priceChange !== undefined ? tradePriceChange : null),
+    : (trade.priceChange !== undefined ? trade.priceChange : null),
   spyChange: trade.spy_change !== null && trade.spy_change !== undefined
     ? Number(trade.spy_change)
     : (trade.spyChange !== undefined ? trade.spyChange : null),
@@ -625,12 +625,227 @@ const fetchAlphaMovers = async () => {
 app.use('/static', express.static(path.join(__dirname, '../static')));
 app.use('/scripts', express.static(path.join(__dirname, '../scripts')));
 
+// --- Session & account APIs ---
+
+// Current session (used by settings.js to prefill email)
 app.get('/api/session', (req, res) => {
   if (!req.session.user) {
     return res.status(401).json({ error: 'unauthenticated' });
   }
   return res.json({ user: req.session.user });
 });
+
+// Update account email (transactional, handles follows FK)
+app.post('/api/settings/email', requireAuth, async (req, res) => {
+  try {
+    const { newEmail, password } = req.body || {};
+
+    if (!newEmail || !password) {
+      return res.status(400).json({ error: 'missingFields' });
+    }
+
+    const normalizedNew = newEmail.trim().toLowerCase();
+    if (!isValidEmail(normalizedNew)) {
+      return res.status(400).json({ error: 'invalidEmail' });
+    }
+
+    // Source of truth: session email
+    const sessionEmail = (req.session.user?.email || '').toLowerCase();
+    if (!sessionEmail) {
+      return res.status(401).json({ error: 'unauthenticated' });
+    }
+
+    // Load current user
+    const user = await db.oneOrNone(
+      'SELECT email, password FROM users WHERE email = $1',
+      [sessionEmail],
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'userNotFound' });
+    }
+
+    // Check password
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) {
+      return res.status(401).json({ error: 'invalidPassword' });
+    }
+
+    // If email didn't change, just return success
+    if (normalizedNew === user.email.toLowerCase()) {
+      return res.json({ email: user.email });
+    }
+
+    // Make sure new email isn't already used
+    const existing = await db.oneOrNone(
+      'SELECT email FROM users WHERE email = $1',
+      [normalizedNew],
+    );
+    if (existing) {
+      return res.status(409).json({ error: 'emailExists' });
+    }
+
+    // Do everything in a transaction:
+    // 1) Insert new user with same password
+    // 2) Move follows over
+    // 3) Delete old user
+    await db.tx(async (t) => {
+      // 1) Insert new user
+      await t.none(
+        'INSERT INTO users(email, password) VALUES ($1, $2)',
+        [normalizedNew, user.password],
+      );
+
+      // 2) Re-point follows (if any) to new email
+      await t.none(
+        'UPDATE follows SET user_email = $1 WHERE user_email = $2',
+        [normalizedNew, user.email],
+      );
+
+      // 3) Delete old user row
+      await t.none(
+        'DELETE FROM users WHERE email = $1',
+        [user.email],
+      );
+    });
+
+    // Update session
+    req.session.user.email = normalizedNew;
+
+    return res.json({ email: normalizedNew });
+  } catch (error) {
+    console.error('Failed to update email:', error);
+    return res.status(500).json({ error: 'server', detail: error.message });
+  }
+});
+
+// Alias so settings.js works: /api/settings/password
+app.post('/api/settings/password', requireAuth, async (req, res) => {
+  const email = req.session.user.email;
+  const currentPassword = (req.body.currentPassword || '').trim();
+  const newPassword = (req.body.newPassword || '').trim();
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'missing' });
+  }
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: 'weakPassword' });
+  }
+
+  try {
+    const user = await db.oneOrNone(
+      'SELECT email, password FROM users WHERE email = $1',
+      [email],
+    );
+    if (!user) {
+      return res.status(404).json({ error: 'notFound' });
+    }
+
+    const ok = await bcrypt.compare(currentPassword, user.password);
+    if (!ok) {
+      return res.status(401).json({ error: 'invalidPassword' });
+    }
+
+    const hash = await bcrypt.hash(newPassword, 10);
+    await db.none('UPDATE users SET password = $1 WHERE email = $2', [hash, email]);
+
+    return res.json({ status: 'ok' });
+  } catch (error) {
+    console.error('Password update failed:', error);
+    return res.status(500).json({ error: 'server' });
+  }
+});
+
+// Change EMAIL
+app.post('/api/account/email', requireAuth, async (req, res) => {
+  const currentEmail = req.session.user.email;
+  const newEmail = (req.body.newEmail || '').trim().toLowerCase();
+  const currentPassword = (req.body.currentPassword || '').trim();
+
+  if (!isValidEmail(newEmail)) {
+    return res.status(400).json({ error: 'invalidEmail' });
+  }
+  if (!currentPassword) {
+    return res.status(400).json({ error: 'missingPassword' });
+  }
+
+  try {
+    const user = await db.oneOrNone(
+      'SELECT email, password FROM users WHERE email = $1',
+      [currentEmail],
+    );
+    if (!user) {
+      return res.status(404).json({ error: 'notFound' });
+    }
+
+    const ok = await bcrypt.compare(currentPassword, user.password);
+    if (!ok) {
+      return res.status(401).json({ error: 'invalidPassword' });
+    }
+
+    // Use transaction so follows table stays in sync
+    await db.tx(async (t) => {
+      // ensure new email not already in use
+      const existing = await t.oneOrNone('SELECT email FROM users WHERE email = $1', [newEmail]);
+      if (existing) {
+        const err = new Error('exists');
+        err.code = '23505';
+        throw err;
+      }
+
+      await t.none('UPDATE users SET email = $1 WHERE email = $2', [newEmail, currentEmail]);
+      await t.none('UPDATE follows SET user_email = $1 WHERE user_email = $2', [newEmail, currentEmail]);
+    });
+
+    req.session.user.email = newEmail;
+    return res.json({ email: newEmail });
+  } catch (error) {
+    if (error.code === '23505' || error.message === 'exists') {
+      return res.status(409).json({ error: 'exists' });
+    }
+    console.error('Email update failed:', error);
+    return res.status(500).json({ error: 'server' });
+  }
+});
+
+// Change PASSWORD
+app.post('/api/account/password', requireAuth, async (req, res) => {
+  const email = req.session.user.email;
+  const currentPassword = (req.body.currentPassword || '').trim();
+  const newPassword = (req.body.newPassword || '').trim();
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'missing' });
+  }
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: 'weakPassword' });
+  }
+
+  try {
+    const user = await db.oneOrNone(
+      'SELECT email, password FROM users WHERE email = $1',
+      [email],
+    );
+    if (!user) {
+      return res.status(404).json({ error: 'notFound' });
+    }
+
+    const ok = await bcrypt.compare(currentPassword, user.password);
+    if (!ok) {
+      return res.status(401).json({ error: 'invalidPassword' });
+    }
+
+    const hash = await bcrypt.hash(newPassword, 10);
+    await db.none('UPDATE users SET password = $1 WHERE email = $2', [hash, email]);
+
+    return res.json({ status: 'ok' });
+  } catch (error) {
+    console.error('Password update failed:', error);
+    return res.status(500).json({ error: 'server' });
+  }
+});
+
+// --- Rest of APIs ---
 
 app.get('/api/stocks/movers', requireAuth, async (req, res) => {
   if (!ALPHAVANTAGE_API_KEY) {
@@ -976,7 +1191,7 @@ app.get('/register', (req, res) => {
   return res.sendFile(path.join(__dirname, '../templates/register.html'));
 });
 
-const wantsHtmlResponse = req => {
+const wantsHtmlResponse = (req) => {
   const accepts = req.headers.accept || '';
   const contentType = req.headers['content-type'] || '';
   return (
@@ -1092,7 +1307,7 @@ app.get('/congress', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, '../templates/congress.html'));
 });
 
-// ✅ NEW: routes for profile and settings
+// profile/settings pages
 app.get('/profile', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, '../templates/profile.html'));
 });
