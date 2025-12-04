@@ -1,134 +1,119 @@
-// ====== Simple Solid Black Background for Settings ======
-document.addEventListener('DOMContentLoaded', () => {
-  const canvas = document.getElementById('ledBackdrop');
-  if (!canvas) return;
+document.addEventListener('DOMContentLoaded', async () => {
+  const currentEmailInput = document.getElementById('currentEmail');
+  const newEmailInput = document.getElementById('newEmail');
+  const emailPasswordInput = document.getElementById('emailPassword');
+  const updateEmailBtn = document.getElementById('updateEmailBtn');
 
-  const ctx = canvas.getContext('2d', { alpha: false });
-  let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  const currentPasswordInput = document.getElementById('currentPassword');
+  const newPasswordInput = document.getElementById('newPassword');
+  const changePasswordBtn = document.getElementById('changePasswordBtn');
 
-  function drawSolidBlack() {
-    const W = window.innerWidth;
-    const H = window.innerHeight;
+  // ✅ AUTO-FILL CURRENT EMAIL FROM SESSION
+  try {
+    const res = await fetch('/api/session', {
+      headers: { Accept: 'application/json' }
+    });
 
-    canvas.width = Math.floor(W * dpr);
-    canvas.height = Math.floor(H * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    // Just solid black
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, W, H);
-  }
-
-  drawSolidBlack();
-  window.addEventListener('resize', drawSolidBlack);
-});
-
-// ====== Settings Logic (localStorage) ======
-document.addEventListener('DOMContentLoaded', () => {
-  const STORAGE_KEY = 'buffonomicsUserSettings';
-
-  const form = document.getElementById('settingsForm');
-  const saveStatus = document.getElementById('saveStatus');
-  const resetBtn = document.getElementById('resetSettings');
-
-  if (!form) return;
-
-  const displayNameInput = document.getElementById('displayName');
-  const handleInput = document.getElementById('handle');
-  const emailInput = document.getElementById('email');
-  const regionSelect = document.getElementById('newsRegion');
-  const intensitySelect = document.getElementById('newsIntensity');
-  const topicMarkets = document.getElementById('topic-markets');
-  const topicPolicy = document.getElementById('topic-policy');
-  const topicEarnings = document.getElementById('topic-earnings');
-  const topicEnergy = document.getElementById('topic-energy');
-  const notifyEmail = document.getElementById('notifyEmail');
-  const notifyInApp = document.getElementById('notifyInApp');
-
-  function showStatus(msg) {
-    if (!saveStatus) return;
-    saveStatus.textContent = msg;
-  }
-
-  function loadSettings() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-
-      const data = JSON.parse(raw);
-      if (data.displayName && displayNameInput) displayNameInput.value = data.displayName;
-      if (data.handle && handleInput) handleInput.value = data.handle;
-      if (data.email && emailInput) emailInput.value = data.email;
-      if (data.newsRegion && regionSelect) regionSelect.value = data.newsRegion;
-      if (data.newsIntensity && intensitySelect) intensitySelect.value = data.newsIntensity;
-
-      if (topicMarkets) topicMarkets.checked = !!data.topicMarkets;
-      if (topicPolicy) topicPolicy.checked = !!data.topicPolicy;
-      if (topicEarnings) topicEarnings.checked = !!data.topicEarnings;
-      if (topicEnergy) topicEnergy.checked = !!data.topicEnergy;
-
-      if (notifyEmail) notifyEmail.checked = !!data.notifyEmail;
-      if (notifyInApp) notifyInApp.checked = !!data.notifyInApp;
-    } catch (e) {
-      console.error('Failed to load settings', e);
+    if (res.ok) {
+      const payload = await res.json();
+      if (payload?.user?.email && currentEmailInput) {
+        currentEmailInput.value = payload.user.email;
+      }
     }
+  } catch (err) {
+    console.error('Failed to load session email:', err);
   }
 
-  function saveSettings(evt) {
-    evt.preventDefault();
+  // ✅ UPDATE EMAIL
+  updateEmailBtn?.addEventListener('click', async () => {
+    const newEmail = newEmailInput.value.trim();
+    const password = emailPasswordInput.value.trim();
 
-    const data = {
-      displayName: displayNameInput?.value.trim() || 'Buffonomics User',
-      handle: handleInput?.value.trim() || 'you',
-      email: emailInput?.value.trim() || '',
-      newsRegion: regionSelect?.value || 'us',
-      newsIntensity: intensitySelect?.value || 'normal',
-      topicMarkets: !!topicMarkets?.checked,
-      topicPolicy: !!topicPolicy?.checked,
-      topicEarnings: !!topicEarnings?.checked,
-      topicEnergy: !!topicEnergy?.checked,
-      notifyEmail: !!notifyEmail?.checked,
-      notifyInApp: !!notifyInApp?.checked
-    };
+    if (!newEmail || !password) {
+      alert('Please enter a new email and your current password.');
+      return;
+    }
 
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      showStatus('Settings saved.');
-    } catch (e) {
-      console.error('Failed to save settings', e);
-      showStatus('Could not save settings (storage error).');
+      const res = await fetch('/api/settings/email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify({ newEmail, password })
+      });
+
+      const payload = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        const code = payload?.error;
+
+        if (code === 'invalidPassword') {
+          alert('Incorrect password. Please try again.');
+        } else if (code === 'emailExists') {
+          alert('That email is already in use.');
+        } else if (code === 'invalidEmail') {
+          alert('Please enter a valid email address.');
+        } else if (code === 'missingFields') {
+          alert('Please fill out all fields.');
+        } else {
+          alert('Failed to update email.');
+        }
+        return;
+      }
+
+      alert('Email updated successfully.');
+      currentEmailInput.value = newEmail;
+      newEmailInput.value = '';
+      emailPasswordInput.value = '';
+    } catch (err) {
+      alert('Failed to update email.');
+      console.error(err);
     }
-  }
+  });
 
-  function resetToDefaults() {
-    localStorage.removeItem(STORAGE_KEY);
+  // ✅ CHANGE PASSWORD
+  changePasswordBtn?.addEventListener('click', async () => {
+    const currentPassword = currentPasswordInput.value.trim();
+    const newPassword = newPasswordInput.value.trim();
 
-    if (displayNameInput) displayNameInput.value = 'Buffonomics User';
-    if (handleInput) handleInput.value = 'you';
-    if (emailInput) emailInput.value = '';
-    if (regionSelect) regionSelect.value = 'us';
-    if (intensitySelect) intensitySelect.value = 'normal';
+    if (!currentPassword || !newPassword) {
+      alert('Please fill out both password fields.');
+      return;
+    }
 
-    if (topicMarkets) topicMarkets.checked = true;
-    if (topicPolicy) topicPolicy.checked = true;
-    if (topicEarnings) topicEarnings.checked = false;
-    if (topicEnergy) topicEnergy.checked = false;
+    try {
+      const res = await fetch('/api/account/password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
 
-    if (notifyEmail) notifyEmail.checked = false;
-    if (notifyInApp) notifyInApp.checked = true;
+      const payload = await res.json().catch(() => null);
 
-    showStatus('Defaults restored. Remember to save.');
-  }
+      if (!res.ok) {
+        const code = payload?.error;
 
-  form.addEventListener('submit', saveSettings);
-  resetBtn?.addEventListener('click', resetToDefaults);
+        if (code === 'invalidPassword') {
+          alert('Incorrect current password.');
+        } else if (code === 'weakPassword') {
+          alert('Password must be at least 8 characters.');
+        } else {
+          alert('Failed to update password.');
+        }
+        return;
+      }
 
-  // Load settings if they exist
-  loadSettings();
-
-  // If no stored settings, initialize defaults silently
-  if (!localStorage.getItem(STORAGE_KEY)) {
-    resetToDefaults();
-    showStatus('');
-  }
+      alert('Password updated successfully.');
+      currentPasswordInput.value = '';
+      newPasswordInput.value = '';
+    } catch (err) {
+      alert('Failed to update password.');
+      console.error(err);
+    }
+  });
 });
