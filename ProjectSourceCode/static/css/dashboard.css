@@ -296,9 +296,16 @@ body {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
-  margin-top: 12px;
   flex: 1;
   min-height: 0;
+}
+
+.congress-grid-wrapper {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin-top: 12px;
+  overflow: visible;
 }
 
 .congress-card {
