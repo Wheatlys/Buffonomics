@@ -537,6 +537,10 @@ body {
   cursor: pointer;
   padding: 0;
   text-decoration: underline;
+  display: inline-block;
+  min-width: 88px;
+  text-align: right;
+  white-space: nowrap;
 }
 
 @media (max-width: 960px) {

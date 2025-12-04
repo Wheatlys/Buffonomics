@@ -24,6 +24,14 @@ document.addEventListener('DOMContentLoaded', () => {
     maximumFractionDigits: 1,
   });
 
+  const syncFollowButtons = () => {
+    document.querySelectorAll('[data-follow-name]').forEach((btn) => {
+      const target = btn.dataset.followName;
+      if (!target) return;
+      updateFollowButton(btn, target);
+    });
+  };
+
   navButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
       navButtons.forEach((b) => b.classList.remove('is-active'));
@@ -251,6 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!followItems.length) {
         await fetchFollows();
       }
+      syncFollowButtons();
     } catch (error) {
       console.error('Follow toggle failed:', error);
       alert('Unable to update following right now.');
@@ -345,6 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const followBtn = document.createElement('button');
       followBtn.type = 'button';
       followBtn.className = 'ghost-btn';
+      followBtn.dataset.followName = item.name;
       updateFollowButton(followBtn, item.name);
       followBtn.addEventListener('click', (event) => {
         event.stopPropagation();
@@ -371,6 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const payload = await response.json();
       renderCongressMembers(payload.items || []);
+      syncFollowButtons();
     } catch (error) {
       console.error('Unable to load congressional highlights:', error);
       congressStatus.textContent = 'Unable to load highlights right now.';
@@ -429,6 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const followBtn = document.createElement('button');
       followBtn.type = 'button';
       followBtn.className = 'follow-btn';
+      followBtn.dataset.followName = item.name || item.queryKey;
       updateFollowButton(followBtn, item.name || item.queryKey);
       followBtn.addEventListener('click', (event) => {
         event.stopPropagation();
@@ -469,6 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
       followedKeys = new Set(keys);
       followItems = payload.items || [];
       renderFollows();
+      syncFollowButtons();
     } catch (error) {
       console.error('Unable to load following list:', error);
       stocksStatus.textContent = 'Unable to load following list right now.';
