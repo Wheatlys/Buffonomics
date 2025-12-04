@@ -15,6 +15,13 @@
 </head>
 
 <body>
+  <div
+    id="settingsThreadsBackground"
+    class="threads-bg"
+    aria-hidden="true"
+    data-amplitude="1"
+    data-distance="1"
+    data-interactive="true"></div>
   <!-- HEADER (same structure as dashboard, but no search/settings button) -->
   <header class="shell-header">
     <div class="brand-home">
@@ -90,6 +97,7 @@
     </section>
   </main>
 
+  <script type="module" src="/scripts/settings-bg.js"></script>
   <script src="/scripts/settings.js" defer></script>
 </body>
 </html>
