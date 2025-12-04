@@ -194,6 +194,72 @@ body {
   background: rgba(255, 208, 64, 0.08);
 }
 
+.welcome-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: radial-gradient(circle at 20% 20%, rgba(255, 208, 64, 0.08), transparent 50%), rgba(6, 7, 8, 0.78);
+  backdrop-filter: blur(14px) saturate(130%);
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+.welcome-overlay[hidden] {
+  display: none;
+}
+
+.welcome-overlay.is-hiding {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.welcome-copy {
+  text-align: center;
+  max-width: 620px;
+}
+
+.welcome-kicker {
+  margin: 0 0 8px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.welcome-headline {
+  margin: 0 0 8px;
+  font-size: clamp(28px, 4vw, 44px);
+  letter-spacing: 0.4px;
+}
+
+.welcome-sub {
+  margin: 0;
+  color: var(--muted);
+}
+
+.text-type {
+  display: inline-block;
+  white-space: pre-wrap;
+}
+
+.text-type__cursor {
+  margin-left: 6px;
+  display: inline-block;
+  animation: cursor-blink 1s steps(1, end) infinite;
+}
+
+.text-type__cursor--hidden {
+  opacity: 0;
+}
+
+@keyframes cursor-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
 .workspace {
   padding: 32px clamp(18px, 6vw, 64px) 64px;
   display: grid;

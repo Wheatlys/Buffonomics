@@ -1,5 +1,11 @@
 // ====== Login / Register form UX ======
 document.addEventListener('DOMContentLoaded', () => {
+  try {
+    sessionStorage.removeItem('buffonomicsWelcomeSeen');
+  } catch (e) {
+    /* ignore storage errors */
+  }
+
   const params = new URLSearchParams(window.location.search);
   const messageMap = {
     registered: 'Account created! Sign in below.',
