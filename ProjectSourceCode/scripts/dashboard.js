@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const stocksList = document.querySelector('.stocks-list');
   const stocksStatus = document.querySelector('.stocks-status');
   const congressGrid = document.querySelector('[data-congress-grid]');
+  const congressGridWrapper = document.querySelector('[data-congress-grid-wrapper]');
   const congressStatus = document.querySelector('[data-congress-status]');
   const congressRefresh = document.querySelector('[data-congress-refresh]');
   const searchForm = document.getElementById('memberSearch');
@@ -23,6 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
     notation: 'compact',
     maximumFractionDigits: 1,
   });
+
+  let congressItems = [];
 
   const syncFollowButtons = () => {
     document.querySelectorAll('[data-follow-name]').forEach((btn) => {
@@ -269,17 +272,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  const renderCongressMembers = (items = []) => {
+  const renderCongressMembers = (items = null) => {
     if (!congressGrid || !congressStatus) return;
 
+    if (Array.isArray(items)) {
+      congressItems = items;
+    }
+
     congressGrid.innerHTML = '';
-    if (!items.length) {
+    if (!congressItems.length) {
       congressStatus.textContent = 'No recent congressional trades available.';
       return;
     }
 
     congressStatus.textContent = '';
-    items.forEach((item) => {
+    congressItems.forEach((item) => {
       const roleLabel = [item.role, item.chamber].filter(Boolean).join(' · ') || 'Member';
       const card = document.createElement('article');
       card.className = 'congress-card';
@@ -366,6 +373,8 @@ document.addEventListener('DOMContentLoaded', () => {
       card.append(roleLine, name, summary, tags, footer);
       congressGrid.appendChild(card);
     });
+
+    syncFollowButtons();
   };
 
   const fetchCongressMembers = async () => {
@@ -381,7 +390,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const payload = await response.json();
       renderCongressMembers(payload.items || []);
-      syncFollowButtons();
     } catch (error) {
       console.error('Unable to load congressional highlights:', error);
       congressStatus.textContent = 'Unable to load highlights right now.';
